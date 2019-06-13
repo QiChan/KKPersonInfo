@@ -1,0 +1,19 @@
+1. git init
+
+2. git status
+
+3. git clone url
+
+4. git push url master
+push local prj to remote repo
+
+5. git remote add newRepoName url
+associate extra remote repo
+
+6. git remote -v
+check remote repo
+
+7. git remote rm repoName
+delete remote repo's association
+
+8.

@@ -1,0 +1,878 @@
+================================= SED ========================================================================================================
+Sed Command Syntax
+
+Basic sed syntax:
+sed [options] {sed-commands} {input-file}
+
+> sed -n 'p' /etc/passwd
+# prints all the lines from the /etc/passwd file
+
+Basic sed syntax for use with sed-command file:
+sed [options] -f {sed-commands-in-a-file} {input-file}
+
+> vi test-script.sed
+/^root/ p
+/^nobody/ p
+
+> sed -n -f test-script.sed /etc/passwd
+# print lines beginning with root and nobody from the /etc/passed file
+
+Basic sed syntax using -e:
+sed [options] -e {sed-command-1} -e {sed-command-2} {input-file}
+
+> sed -n -e '/^root/ p' -e '/^nobody/ p' /etc/passwd
+# print lines beginning with root and nobody from /etc/passwd file
+
+#  If you are executing a lot of commands in a single line using several
+#+ -e arguments, you can split them into multiple lines using a backslash
+#+ as shown below
+> sed -n \
+-e '/^root/ p' \
+-e '/^nobody/ p' \
+/etc/passwd
+
+
+#  You can also execute multiple sed commands in the command line by
+#+ grouping them together using { }:
+sed [options] '{
+sed-command-1
+sed-command-2
+}' input-file
+
+Print Pattern Space (p command)
+Using the sed p command, you can print the current pattern space.
+
+> sed 'p' input-file
+# would print every line of input-file twice
+
+> sed -n 'p' input-file
+# would print every line of input-file once
+
+Specifying an Address Range
+
+> sed -n '2 p' employee.txt
+# print only the 2nd line
+
+> sed -n '1,4 p' employee.txt
+# print from line 1 through line 4
+
+> sed -n '2,$ p' employee.txt
+# print from line 2 through the last line ($ represents the last line)
+
+Modify Address Range
+
+> sed -n '1~2 p' employee.txt
+#  print only odd numbered lines
+#+ The tilde (~) may also be used in an address range. Its special
+#+ meaning is to skip lines between commands. For example, address
+#+ range n~m indicates that sed should start at the nth line and pick up
+#+ every mth line from there.
+#+ • 1~2 matches 1,3,5,7, etc.
+#+ • 2~2 matches 2,4,6,8, etc.
+#+ • 1~3 matches 1,4,7,10, etc.
+#+ • 2~3 matches 2,5,8,11, etc.
+
+Pattern Matching
+
+> sed -n '/Jane/ p' employee.txt
+# print lines matching the pattern "Jane"
+
+> sed -n '/Jason/,4 p' employee.txt
+# print lines starting from the 1st match of "Jason" until the 4th line
+#  Note: If there were no matches for "Jason" in the first 4 lines, this
+#+ command would print the lines that match "Jason" after the 4th line.
+
+> sed -n '/Raj/,$ p' employee.txt
+# print lines starting from the 1st match of "Raj" until the last line
+
+> sed -n '/Raj/,/Jane/ p' employee.txt
+# print lines starting from the line matching "Raj" until the line matching "Jane"
+
+> sed -n '/Jason/,+2 p' employee.txt
+# print the line matching "Jason" and 2 lines immediately after that
+#  The plus (+) may be used in conjunction with the comma, to specify a
+#+ number of lines instead of an absolute line number. For example, n,
+#+ +m means the m lines starting with n.
+
+Delete Lines (d command)
+
+> sed 'd' employee.txt
+# would not print anything, as it matches all the lines in the employee.txt and deletes them
+
+> sed '2 d' employee.txt
+# delete only the 2nd line
+
+> sed '1,4 d' employee.txt
+# delete from line 1 through 4
+
+> sed '2,$ d' employee.txt
+# delete from line 2 through the last line
+
+> sed '1~2 d' employee.txt
+# delete only odd number of lines
+
+> sed '/Manager/ d' employee.txt
+# delete lines matching the pattern "Manager"
+
+> sed '/Jason/,4 d' employee.txt
+# delete lines starting from the 1st match of "Jason" until the 4th line
+#  If there are no matches for "Jason" in the 1st 4 lines, this command
+#+ deletes only the lines that match "Jason" after the 4th line.
+
+> sed '/Raj/,$ d' employee.txt
+# delete lines starting from the 1st match of "Raj" until the last line
+
+> sed '/Raj/,/Jane/ d' employee.txt
+# delete lines starting from the line matching "Raj" until the line matching "Jane"
+
+> sed '/Jason/,+2 d' employee.txt
+# delete lines starting from the line matching "Jason" and 2 lines immediately after that
+
+Useful Delete Examples
+> sed '/^$/ d' employee.txt
+# delete all the empty lines from a file
+
+> sed '/^#/ d' employee.txt
+# delete all comment lines (assuming the comment starts with #)
+#  Note: When you have multiple sed commands, the moment sed
+#+ encounters the 'd' command, the whole line matching the pattern will
+#+ be deleted, and no further commands will be executed on the deleted line.
+
+Write Pattern Space to File (w command)
+
+> sed 'w output.txt' employee.txt
+# write the content of employee.txt file to file output.txt (and display on screen)
+
+> sed -n 'w output.txt' employee.txt
+# write the content of employee.txt file to output.txt file but not to screen
+
+> sed -n '2 w output.txt' employee.txt
+# write only the 2nd line
+
+> sed -n '1,4 w output.txt' employee.txt
+# write lines 1 through 4
+
+> sed -n '2,$ w output.txt' employee.txt
+# write from line 2 through the last line
+
+> sed -n '1~2 w output.txt' employee.txt
+# write only odd numbered lines
+
+> sed -n '/Jane/ w output.txt' employee.txt
+# write lines matchig the pattern "Jane"
+
+> sed -n '/Jason/,4 w output.txt' employee.txt
+# write lines stating from the 1st match of "Jason" until the 4th
+#  If there are no matches for "Jason" in the 1st 4 lines, this command
+#+ writes only the lines that match "Jason" after the 4th line.
+
+> sed -n '/Raj/,$ w output.txt' employee.txt
+# write lines starting rom the 1st match of "Raj" until the last line
+
+> sed -n '/Raj/,/Jane/ w output.txt' employee.txt
+# write lines starting from the line matching "Raj" until the line matching "Jane"
+
+> sed -n '/Jason/,+2 w output.txt' employee.txt
+# write the line matching "Jason" and the next 2 lines immediately after that
+#  Note: You might not use the w command frequently. Most people use
+#+ UNIX output redirection, instead, to store the output of sed to a file.
+#+ For example: sed 'p' employee.txt > output.txt
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~another sed note~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sed
+stream editor for filtering and transforming text
+Sed is a stream editor. A stream editor is used to perform basic text transformations on an input stream (a file or input from a pipeline). While in some ways similar to an editor which permits scripted edits (such as ed), sed works by making only one pass over the input(s), and is consequently more efficient. But it is sed's ability to filter text in a pipeline which particularly distinguishes it from other types of editors.
+
+Sed is a non-interactive stream editor. It receives text input, whether from stdin or from a file, performs certain operations on specified lines of the input, one line at a time, then output the result to stdout or to a file. Within a shell script, sed is usually one of several tool components in a pipe.
+
+sed' modify unit is a whole line
+
+Addresses
+Sed commands can be given with no addresses, in which case the command will be executed for all input lines; with one address, in which case the command will only be executed for input lines which match that address; or with two addresses, in which case the command will be executed for all input lines which match the inclusive range of lines starting from the first address and continuing to the second address. Three things to note about address ranges: the syntax is addr1,addr2 (i.e., the addresses are separated by a comma); the line which addr1 matched will always be accepted, even if addr2 selects an earlier line; and if addr2 is a regexp, it will not be tested against the line that addr1 matched.
+
+After the address (or address-range), and before the command, a ! may be inserted, which specifies that the command shall only be exe‐ cuted if the address (or address-range) does not match.
+
+The following address types are supported:
+
+number
+Match only the specified line number (which increments cumulatively across files, unless the -s option is specified on the com‐
+mand line).
+
+first~step
+Match every step'th line starting with line first. For example, ``sed -n 1~2p'' will print all the odd-numbered lines in the
+input stream, and the address 2~5 will match every fifth line, starting with the second. first can be zero; in this case, sed
+operates as if it were equal to step. (This is an extension.)
+
+$ Match the last line.
+
+/regexp/
+Match lines matching the regular expression regexp.
+
+\cregexpc
+Match lines matching the regular expression regexp. The c may be any character.
+
+GNU sed also supports some special 2-address forms:
+
+0,addr2
+Start out in "matched first address" state, until addr2 is found. This is similar to 1,addr2, except that if addr2 matches the
+very first line of input the 0,addr2 form will be at the end of its range, whereas the 1,addr2 form will still be at the begin‐
+ning of its range. This works only when addr2 is a regular expression.
+
+addr1,+N
+Will match addr1 and the N lines following addr1.
+
+addr1,~N
+Will match addr1 and the lines following addr1 until the next line whose input line number is a multiple of N.
+
+
+-e script, --expression=script
+add the script to the commands to be executed
+to multi-edit, e.g.
+sed -e '...' -e '...' -e '...'
+each edit would be on the basic of the previous edittin result
+
+The -e option causes the next string to be interpreted as an edit-script
+
+sed -e '/^$/d' , as the example , there have to be quoted by strong quoting '' , The "strong" quotes ('') protect the RE characters in the instruction from reinterpretation as special characters by the body of the script. (This reserves RE expansion of the instruction for sed.)
+
+sed's modification to input-file could pipe to or redirect to another place then save
+
+How -e option work? the answer is following:
+every matched line (at least match one edit-script) in the pattern space would be executed all the multiple edit-script by sequence.
+
+a linefeed have the same effect as -e
+e.g.
+---> sed -e '/^\/\*/d' -e '/.*\*\//d'
+is equivalent to the following command:
+---> sed '
+---> /^\/\*/d
+---> /.*\*\//d
+---> ' filename
+all that need is to separate different expressions by a linefeed
+
+-n, --quiet, --silent
+suppress automatic printing of pattern space
+by default, sed would output all contents in pattern-space to screen, but use -n , would only print the contents that has been execute by command p to screen
+e.g.
+---> seq 4 |sed -n 'n;p'
+===> 2		     ^
+===> 4
+different expressions separated by semi-colon
+e.g.
+sed "s%/\*%pattern2%g;s%\*/%pattern2%g"
+#		     ^
+
+-f script-file, --file=script-file
+add the contents of script-file to the commands to be executed
+sed's operation on lines called "script", so the script-file contained scripts which could operate on lines in batch
+format:
+sed [options] -f scriptfile file(s)
+
+-r, --regexp-extended
+use extended regular expressions in the script. coz sed only support basic RE by default
+
+-i[SUFFIX], --in-place[=SUFFIX]
+edit files in place (makes backup if SUFFIX supplied)
+directly edit the raw-file, rather than print to screen
+e.g.
+sed -i.backup '2a drink tea?' input-file ---> there is a backup of input-file named input-file.backup, and the raw file modified
+sed -i -e '1a drink tea?' input file ---> as -i follow by a "blank space", there gonna be no backup-file
+
+script(operations) direction
+『n1,n2』OPERATION
+n1,n2 generally represent lines-range that would be taken operations
+following is OPERATION
+a: add		a could follow by strings, these strings would add in a new line next to the current line
+                example: add one new line contained "drink tea?" next to the 2nd line ---> sed '2a drink tea?' input-file
+                example: add two new lines contained "Drink tea or ..." and "drink beer?" respectively next to the 2nd line ---> sed '2a Drink tea or ...\drink beer?' input-file
+                notice: we could add more than one new line, but each line must be separate with "\" , after each "\" should press "Enter" key
+
+c: substitute	c could follow by strings, these strings would substitute lines between n1 and n2
+                example: substitute 2~5 line's contents to "No 2-5 number" ---> sed '2,5c No 2-5 number' input-file
+
+d: delete	d generally follow by nothing
+                example: delete 2~5 line of input-file ---> sed '2,5d' input-file
+                example: delete 2nd line of input-file ---> sed '2d' input-file
+                example: delete 3~the-last-line of input-file ---> sed '3,$d' input-file
+                notice: $ in line-unit represent "the last line", $ in character-unit represent "the last character"
+
+i: insert	i could follow by strings, these strings would insert in a new line previous to the current line
+
+p: print	print out the specified pattern match part, usually cooperate with the -n option
+                example: list input-file's 5~7 line's contents only ---> sed -n '5,7p' input-file
+
+s: substitute	directly proceed substitution, usually cooperate with RM
+                e.g.
+                1,20s/old/new/g
+                notice: if  1,20s/old//g   , the "old" would be substituted by blank cause blank line,  sed '/^$/d'  could delete all these blank lines
+
+
+Basic sed operators
+Operator				Name			Effct
+[address-range]/p			print			Print [specified address range]
+example: Print only lines containing "Jones" (with -n option) ---> /Jones/p
+notice: -n option cooperate with operation p, indicate to print the lines only been modified||manipulated by sed ---> sed -n 's/test/TEST/p' file
+
+[address-range]/d			delete			Delete [specified address range]
+example: Delete 8th line of input ---> 8d
+example: Delete all blank lines ---> /^$/d
+example: Delete from beginning of input up to, and including first blank line ---> 1,/^$/d
+example: Delete all lines containing "GUI" ---> /GUI/d
+
+s/pattern1/pattern2/			substitute		Substitute pattern2 for first instance of pattern1 in a line
+example: Substitute "Linux" for first instance of "Windows" found in each input line ---> s/Windows/Linux/
+
+[address-range]/s/pattern1/pattern2/	substitute		Substitute pattern2 for first instance of pattern1 in a line, over address-range
+
+[address-range]/y/pattern1/pattern2/	transform		replace any character in pattern1 with the corresponding character in pattern2, over address-range(equivalent of tr)
+
+[address-range] i pattern Filename	insert			Insert pattern at address indicated in file Filename. Usually used with -i in-place option.
+example: Prints "How far are you along?" as first line, "Working on it" as second ---> echo "Working on it." | sed -e '1i How far are you along?'
+example: Inserts 'Linux is great.' at line 5 of the file file.txt ---> 5i 'Linux is great.' file.txt
+
+g					global			Operate on every pattern match within each matched line of input
+example: Substitute "stability" for every instance of "BSOD" found in each input line ---> s/BSOD/stability/g
+example: Compress all consecutive sequences of zeros into a single zero ---> s/00*/0/g
+example: Delete all instances of "GUI", leaving the remainder of each line intact ---> s/GUI//g
+notice: while need to begin operating on Nth pattern, use Ng (N is a digit):
+---> echo sksksksksksk | sed 's/sk/SK/2g'
+===> skSKSKSKSKSK
+
+---> echo sksksksksksk | sed 's/sk/SK/3g'
+===> skskSKSKSKSK
+
+---> echo sksksksksksk | sed 's/sk/SK/4g'
+===> echo skskskSKSKSK
+
+
+delimiter
+/ character in above command has the effect as delimiter, any other delimiter is work too
+e.g.
+sed 's:test:TEXT:g'
+sed 's|test|TEXT|g'
+
+delimiter need to be escaped in some cases
+e.g.
+sed 's/\/bin\/usr\/local\/bin/g'
+
+
+mark of matched string——&
+RE \w\+ would match every single word, & respectively represent each word, & also represent the matched part string
+e.g.
+---> echo this is a test line | sed 's/\w\+/[&]/g'
+===> [this] [is] [a] [test] [line]
+e.g.
+---> sed 's/^192.168.0.1/&localhost/' input-file
+===> 192.168.0.1localhost
+all lines beginning with "192.168.0.1" would be substituted to the themslfves + localhost
+
+
+substring match&mark \1
+use \(..\) to mark substring1 as \1, substring2 as \2 ..., in sequence repectively
+
+e.g.
+substring "love" marked as 1, all "loveable" would be substituted to "lovers", and print them
+---> sed 's/\(love\)able/\1rs/p' input-file
+
+e.g.
+match parts of the given pattern
+---> echo this is digit 7 in a number | sed 's/digit \([0-9]\)/\1/'
+===> this is 7 in a number
+"digit 7" inside command had been substituted to "7", pattern's matched substring is "7"
+
+e.g.
+multi-substring matched and substituted
+---> echo aaa BBB | sed 's/\([a-z]\+\) \([A-Z]\+\)/\2 \1/'
+===> BBB aaa
+
+
+combination of multi-expression
+cat input-file | sed 'expression' | sed 'expression' | <==equivalent to==> cat input-file | sed 'expression; expression'	??
+each sed would manipulate data at the basic of previous sed's manipulated
+
+
+multi-point edit
+sed -e 'expression' -e 'expression' -e ...
+each expression operate on file at the basic of raw-file
+
+
+expression-reference
+sed's expressions could be referenced by single-quote, but if there is variable inside expression, then the expressions have to be referenced by double-quote
+e.g.
+        test=hello
+        echo hello WORLD | sed "s/$test/HELLO"
+        HELLO WORLD
+
+
+designate range of lines to be manipulated by sed: ,(comma)
+e.g.
+print all lines in the range of string "test" to string "check" ---> sed -n '/test/,/check/p' input-file		??
+
+e.g.
+print lines in the range of the 5th line to the first instance of the line begin with string "test"
+sed -n '5,/^test/p' input-file
+
+e.g.
+for all lines in the range of string "test" to string "west", substitute each line's ending to string "aaa bbb"		??
+sed '/test/,/west/s/$/aaa bbb/' input-file ---> RE character ^ represent the most beginning of a line, $ represent the most lasting of a line
+
+
+input-file read in data from file: command r
+e.g.
+sed '/test/r file' filename
+file's contents has been read into input-file, present in a new line next to each line containing(matched) string "test"
+
+
+input-file's matched lines write into file: command w
+e.g.
+sed -n '/test/w file' example
+all lines contain string "test" inside example would be written into file, by the method of overwrite
+
+
+add to (next to line): command a\
+e.g.
+sed '/^test/a\this is a test line' input-file
+add string "this is a test line" next to the lines beginning with string "test"
+
+
+insert (previous to line): command i\
+e.g.
+sed '/^test/i\this is test line' input-line
+insert string "this is test line" previous to the lines beginning with string "test"
+e.g.
+sed -i '5i/this is a test line' test.conf
+insert string "this is a test line" previous to the 5th line in test.conf file
+
+
+next: command n,N
+e.g.
+sed '/test/{ n; s/aa/bb/; }' input-file
+if lines contain "test" matched, take operation on the line next to the matched line: substute aa to bb
+
+difference between n and N: (use a analogy of shell)
+N: echo next line's content>>pattern-space
+n: echo next line's content>pattern-space
+
+e.g.
+---> seq 4 | sed 'n;d'
+===> 1
+===> 3
+accroding sed's address-range, pattern-space first read in line1's content 1, then execute command n, to read in next-line's content and overwrite previous content inside pattern-space, then execute command d, to delete line2's content in pattern-space. Then pattern-space read in line3's content(system's reading-in always overwrite previous contents inside pattern-space), exexute command n and command d respectively in sequence.
+notice: pattern-space's content would be printed to screen before cleaned up, unless contents inside pattern-space been delete or the output been cancel.
+notice: once a line been read in pattern-space, it would not be read in again, no matter it is read by command n,N or system
+
+e.g.
+---> seq 4 | sed 'N;d'
+===>
+the output is nothing, pattern-space first read in line1's content 1, then execute command N, to append next line's content to current pattern-space, then execute command d, to delete all contents inside pattern-space, then pattern-space read in line3's content 3, then execute command N and command d repectively in sequence.
+
+e.g.
+---> seq 7 | sed 'N;d'
+===> 7
+notice: after pattern-space read in last line, and take expression on it, would print it to screen then clean up pattern-space.
+notice: the expression 'N;d', if command N fail to execute, then command d would not be executed
+
+
+transfm: command y
+e.g.
+sed '1,10y/abcde/ABCDE/' input-file
+transform string "abcde" to "ABCDE" in the range of 1st-10th line inside input-file, and print them out
+notice: RM character could not use in this command
+e.g.
+sed 'y/fuck/SHIT/' input-file
+as long as two patterns string are the same length
+
+
+quit: command q
+e.g.
+sed '10q' input-file
+when finish 10 ahead lines' printing, quit sed
+
+
+get: command g,G
+command g: copy(overwrite) hold-space to pattern-space
+command G: append hold-space to pattern-space
+e.g.
+---> seq 4 | sed '/3/g'
+===> 1
+===> 2
+===>
+===> 4
+match line3 read in pattern-space, then overwrite by hold-space
+notice: in normal situation, amount of lines input equal to amount of lines print to screen, even when pattern-space become blank, a blank line would still print to screen
+
+pattern space
+while sed manipulating file, every line of input-file would be stored and manipulated in temporary buffer called "pattern-space", each lines would be print to screen then overwrite by next line by system till last line, (lines would be print to screen unless the line been delete or output been cancel) Then "pattern-space" would print the last line to screen and clean up,  waiting for new lines to store in and to manipulate
+e.g.
+sed -e '/test/h' -e '$G' input-file
+in this example, after all lines match "test" been found, would be stored in "pattern-space", command h would copy this matched part lines into another special buffer called "hold-space". the second expression represent: till the last line of new contents been stored into "pattern-space", command G would take lines inside "hold-space" out and put them back into "pattern-space" as a way that add them next to all the contents existing inside "pattern-space" i.e. all lines contain string "test" inside input-file would be copy and add next to the final of the input-file
+
+
+exchange: command x
+command x is to exchange contents of "hold-space" and "pattern-space"
+e.g.
+---> seq 4 | sed -n 'x;p'
+===>
+===> 1
+===> 2
+===> 3
+the first line is blank, coz while pattern-space read in line1, the hold-space is still blank, then execute command x to exchange contents of these two spaces, result in pattern-space contain blank and  hold-space contain line1, then execute command p to print contents of pattern-space, then pattern-space read in line2 overwrite previous contents, then execute command x and command p respectively in sequence，the last line could only print out line3 coz line4 is inside hold-space
+
+e.g.
+---> seq 4 | sed '/3/{x;p;x;}'
+===> 1
+===> 2
+===>
+===> 3
+===> 4
+notice: if give command to print a blank line, would add a new blank line and amount of lines print to screen would equal to input-line's amount+1. if give command to delete a line, would delete a raw-line that has been inputted and amount of lines print to screen would equal to input-line's amount-1
+e.g.
+---> seq 4 | sed '/3/{x;p;x;d} <===has same result with===> seq 4 | sed '/3/{x;p;d;x}
+===> 1
+===> 2
+===>
+===> 4
+coz there is command to print a blank line and delete a line, so the amount of lines print to screen would equal to input-line's amount+(+1-1) == 4
+left expression: operate on raw-line3 to execute command x then delete it
+right expression: operate on raw-line3 to delete it first then command x useless
+
+
+hold: command h,H
+command h: copy(overwrite) pattern-space to hold-space
+command H: append pattern-space to hold-space
+e.g.
+---> seq 4 | sed 'h;x'
+===> 1
+===> 2
+===> 3
+===> 4
+command h overwrite pattern-space to hold-space, command x exchanged their contents
+notice: every time all expressions have been completely executed once, contents inside pattern-space would be print to screen, unless special situations
+
+e.g.
+---> seq 4 | sed 'x;h'
+===>
+===>
+===>
+===>
+result in 4 blank line
+
+e.g.
+sed -e '/test/h' -e '/check/x' input-file
+overwrite line contain "test" to hold-space, then exchange pattern-space and hold-space. i.e. line contain "check" would be substituted to line contain "test"
+
+print odd-number's line or even-number's line
+method1:
+sed -n 'p;n' input-file # odd-number
+sed -n 'n;p' input-file # even-number
+no patterns designated, both p or n matched every line
+expression would execute on every line in range repeatly
+
+
+print line's No.
+e.g.
+sed -n '$=' input-file
+print input-file's last line's No., "=" represent to print line's No., "$" represent the last line,
+
+e.g.
+sed -n '=' input-file
+print all input-file's line's No.
+
+
+!: represent one command followed "!" work on unselected line, the selected line is ahead of "!"
+e.g.
+1!
+not the 1st line
+
+e.g.
+$!
+not the last line
+
+e.g.
+sed '/^$/!d'
+delete all lines that "not blank"
+notice: commands wanna to work on "not-range" like "d" should follow "!"
+
+tac function	??
+e.g.
+sed '1!G;h;$!d' input-filee.g.
+
+decompose of above example:
+---> seq 3 | sed '1!;G'
+===> 1
+===> 2
+===>
+===> 3
+===>
+notice: if hold-space is empty, then command G would append a new blank line to pattern-space
+
+---> seq 3 | sed '1!;G;h'
+===> 1
+===> 2\n1
+===> 3\n2\n1
+notice: only the command G next to "!" would be influenced not to execute in the "not range", command h execute as uaual
+notice: \n carrige return and change new line
+        \t tab
+        \r carrige return
+
+---> seq 3 | sed '1!;G;h;$!d'
+===> 3
+===> 2
+===> 1
+finally, to delete all lines except last line
+
+usage:
+notice: the standard expression format
+[address-range]command/pattern1/pattern2/mark
+only pattern need to be intactly separated by delimiter / , do not enclose others by delimiter / , or unexpected situations would occur
+the remaining doubts please refer "Bash question collection"
+==============================================================================================================================================
+
+
+============================ AWK =============================================================================================================
+Awk Command Syntax
+
+Basic Awk Syntax:
+awk -Fs '/pattern/ {action}' input-file
+(or)
+awk -Fs '{action}' intput-file
+
+In the above syntax:
+• -F is the field separator. If you don't specify, it will use an
+  empty space as field delimiter.
+
+• The /pattern/ and the {action} should be enclosed inside
+  single quotes.
+
+• /pattern/ is optional. If you don't provide it, awk will process all
+  the records from the input-file. If you specify a pattern, it will
+  process only those records from the input-file that match the
+  given pattern.
+
+• {action} - These are the awk programming commands, which
+  can be one or multiple awk commands. The whole action block
+  (including all the awk commands together) should be closed
+  between { and }
+
+• input-file - The input file that needs to be processed.
+
+> awk -F: '/mail/ {print $1}' /etc/passwd
+< mail
+< mailnull
+#  /mail/ - This is the pattern. awk will process only the lines 
+#+ that contains the keyword mail.
+#  {print $1} - This is the action. This action block contains only
+#+ one awk command, that prints the 1st field of the lines that
+#+ matches the pattern "mail"
+
+Awk Commands in a Separate File
+
+> awk -Fs -f myscript.awk input-file
+#  When you have to process a lot of awk commands, you can specify
+#+ the '/pattern/ {action}' inside an awk script file and invoke it as
+#+ shown below.
+
+Awk Program Structure (BEGIN, body, END block)
+
+1. BEGIN Block
+Syntax of begin block:
+BEGIN { awk-commands }
+
+The begin block gets executed only once at the beginning, before
+awk starts executing the body block for all the lines in the input file.
+
+• The begin block is a good place to print report headers, and
+  initialize variables.
+
+• You can have one or more awk commands in the begin block.
+
+• The keyword BEGIN should be specified in upper case.
+
+• Begin block is optional.
+
+2. Body Block
+Syntax of body block:
+/pattern/ {action}
+
+The body block gets executed once for every line in the input file.
+
+• If the input file has 10 records, the commands in the body
+  block will be executed 10 times (once for each record in the
+  input file).
+
+• There is no keyword for the body block. We discussed pattern
+  and action previously.
+
+3. END Block
+Syntax of end block:
+END { awk-commands }
+
+The end block gets executed only once at the end, after awk
+completes executing the body block for all the lines in the input-file.
+
+• The end block is a good place to print a report footer and do
+  any clean-up activities.
+
+• You can have one or more awk commands in the end block.
+
+• The keyword END should be specified in upper case.
+
+• End block is optional.
+
+> awk 'BEGIN { FS=":"; print "---header---" } \
+/mail/ {print $1} \
+END { print "---footer---"}' /etc/passwd
+< ---header---
+< mail
+< mailnull
+< ---footer---
+
+> vi myscript.awk
+BEGIN {
+  FS":"
+  print "---header---"
+}
+/mail/ {
+ print $1
+}
+END {
+ print "---footer---"
+}
+> awk -f myscript.awk /etc/passwd
+# have the same result as previous instance
+
+> awk -F: '{ print $1 }' /etc/passwd
+# only the body block
+
+> awk -F: 'BEGIN { printf "username\n---------\n"} \
+{ print $1 }\
+END { print "-------" }' /etc/passwd
+# Begin, body, and end block
+
+> awk -F: 'BEGIN { print "UID" } { print $3 }' /etc/passwd
+# Begin, and body block
+
+A Note on using only a BEGIN Block
+
+> awk 'BEGIN { print "Hello World!" }'
+< Hello World!
+
+
+Multiple Input Files
+> awk 'BEGIN { FS=":"; print "---header---" } \
+/mail/ {print $1} \
+END { print "---footer---"}' /etc/passwd /etc/group
+< ---header
+mail
+mailnull
+mail
+mailnull
+---footer---
+# all files would be processed in the body block
+
+Print Command
+By default, the awk print command (without any argument) prints the
+full columns as shown.
+
+> awk '{print}' employee.txt
+# is equivalent to "cat employee.txt" command
+
+> awk '{print $2}' employee.txt
+# print only the employee name (field number2) of every record
+
+> awk -F ',' '{print $2}' employee.txt
+# use comma (,) as field delimiter
+
+> awk -F ',' '{print $2}' employee.txt
+> awk -F "," '{print $2}' employee.txt
+> awk -F, '{print $2}' employee.txt
+#  When there is only one character used for delimiter, any of the
+#+ above forms works
+# or we can use the FS variable for this purpose
+
+> awk -F ',' 'BEGIN \
+{ print "---------\nName\tTitle\n----------"} \
+{ print $2,"\t",$3} \
+END { print "-------------"; }' employee.txt
+<-------------
+Name
+Title
+-------------
+John Doe
+Jason Smith
+CEO
+IT Manager
+Raj Reddy Sysadmin
+Anand Ram Developer
+Jane Miller
+Sales Manager
+-------------
+
+> awk '{print}' employee.txt
+> awk '{print $0}' employee.txt
+#  Both of the above command are the same; each prints
+#+ the whole lines from employee.txt
+
+Pattern Matching
+> awk -F ',' '/Manager/ {print $2, $3}' employee.txt
+# print column 2 and column 3 of lines that contain "Manager"
+
+> awk -F ',' '/^102/ {print "Emp id 102 is", $2}' employee.txt
+#					   ^ the comma just to separate two content gonna to be printed 	
+# match the line which beginning with "102", and print "Emp id 102is" and the column 2 of that line
+
+Awk Built-in Variables
+FS - Input Field Separator
+> awk -F ',' '{print $2, $3}' employee.txt
+> awk 'BEGIN {FS=","} {print $2, $3}' employee.txt
+> awk 'BEGIN { FS=","; \
+print "-------------\nName\tTitle\n-------------" } \
+{ print $2,"\t",$3; } \
+END {print "-------------"}' employee.txt
+# above is about the FS
+
+Please note that the default field separator is not just a single space.
+It actually matches one or more whitespace characters.
+
+> awk 'BEGIN {FS="[,:%]"} {print $2, $3}' \
+employee-multiple-fs.txt
+#  When you encounter a file that contains different field separators,
+#+ don't worry, FS can come to your rescue. You can specify MULTIPLE
+#+ field separators using a regular expression. For example FS = "[,:%]"
+#+ indicates that the field separator can be , or : or %
+
+OFS - Output Field Separator
+> awk -F ',' '{print $2, $3}' employee.txt
+#  variables by separating them with comma (as shown below), it will
+#+ print the values of those two variables separated by space.
+
+> awk -F ',' '{print $2, ":", $3}' employee.txt
+< John Doe : CEO
+Jason Smith : IT Manager
+Raj Reddy : Sysadmin
+Anand Ram : Developer
+Jane Miller : Sales Manager
+#  The above print statement really printing three values (that are
+#+ separated by comma) -- $2, :, and $4. As you already know when you
+#+ use one print statement to print multiple values, the output will
+#+ contain space in between them.
+
+> awk -F ',' 'BEGIN { OFS=":" } \
+{ print $2, $3 }' employee.txt
+# the output will have colon separating them (instead of space), as our OFS is set to colon
+
+> awk 'BEGIN { print "test1","test2" }'
+< test1 test2
+#  When you specify a comma in the print statement
+#+ between different print values, awk will use the OFS. In the above
+#+ example, the default OFS is used, so you'll see a space between the
+#+ values in the output.
+
+> awk 'BEGIN { print "test1" "test2" }'
+< test1test2
+#  When you don't separate values with a comma in the print statement,
+#+ awk will not use the OFS; instead it will print the values with nothing
+#+ in between.
+
+RS - Record Separator

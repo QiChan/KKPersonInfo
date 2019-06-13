@@ -1,0 +1,121 @@
+1.
+basic RE character summary:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+| RE-char | definition & example                                                                             |
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+| ^word   | definition: the string gonna to be searched is at the beginning of a line                        |
+|         | example: search lines begin with the string "#" ---> grep '^#' regular_express.txt               |
++---------+--------------------------------------------------------------------------------------------------+
+| word$   | definition: the string gonna to be searched is at the end of a line                              |
+|         | example: search lines end with the string "!" ---> grep '!$' regular_express.txt                 |
++---------+--------------------------------------------------------------------------------------------------+
+| .       | definition: there must be one character of any kind exist, except                                |
+|         | example: the string gonna to be searched must have one character between e and e                 |
+|         | ---> grep 'e.e' regular_express.txt                                                              |
++---------+--------------------------------------------------------------------------------------------------+
+| \       | definition: the escape character, remove the special meaning of a spechial character             |
+|         | 1) when special character is part of RE-expression, \ remove its special meaning of              |
+|         | RE                                                                                               |
+|         | 2) when special character is part of globbing, \ remove its special meaning of                   |
+|         | wild cards                                                                                       |
+|         | 3) else, \ remove special meaning of other special character e.g. $, ', ", \                     |
+|         | example: search lines containing single-quote character "'"                                      |
+|         | ---> grep \' regular_express.txt                                                                 |
++---------+--------------------------------------------------------------------------------------------------+
+| *       | definition: repeat 0~¡Þ times of previous subexpression                                           |
+|         | example: search lines containing string "es" "ess" "esss" ...                                    |
+|         | ---> grep 'ess*' regular_express.txt                                                             |
+|         | notice: the RE character * must follow a RE character                                            |
+|         | e.g. " .* " represent any string                                                                 |
++---------+--------------------------------------------------------------------------------------------------+
+| [list]  | definition: "Character Classes",  RE character of character set, inside list characters gonna to |
+|         | be searched, pattern would match only one character among characters in list                     |
+|         | example: search lines containing "gl" or "gd" ---> grep 'g[ld]' regular_express.txt              |
+|         | notice: the [list] only represent one character,                                                 |
+|         | e.g. a[afl]y represent 3 characters' string, they are: aay, afy, aly                             |
++---------+--------------------------------------------------------------------------------------------------+
+| [n1-n2] | definition: RE character of character set, inside list character range gonna to be               |
+|         | searched                                                                                         |
+|         | example: search lines containing any number ---> grep '[0-9]' regular_express.txt                |
+|         | notice: inside [n1-n2] the - has special meaning, it represents all successive                   |
+|         | characters between n1 and n2. but the characters successive or not,                              |
+|         | were concerned each character's ASCII code. e.g. all UPPERCASE letter is [A-Z]                   |
++---------+--------------------------------------------------------------------------------------------------+
+| [^list] | definition: RE character of character set, inside list string or string-range that               |
+|         | isn't gonna be searched                                                                          |
+|         | example: search lines containing "oog" "ood" ... but not "oot" ---> grep 'oo[^t]'                |
+|         | regular_express.txt                                                                              |
+|         | notice: inside [^list] the ^ represent "reverse match" e.g. [^A-Z] represent no                  |
+|         | UPPERCASE letter would be searched                                                               |
++---------+--------------------------------------------------------------------------------------------------+
+| {n,m}   | definition: amount of previous subexpression to be matched is in range of n~m                    |
++---------+--------------------------------------------------------------------------------------------------+
+| {n,}    | definition: amount of previous subexpression to be matched is in range of n~¡Þ                    |
++---------+--------------------------------------------------------------------------------------------------+
+| {n}     | definition: amount of previous subexpression to be matched is n                                  |
+|         | example: 'a{2,'} could match at least two "a", i.e. aa, aaa, aaaa, ...                           |
++---------+--------------------------------------------------------------------------------------------------+
+
+
+extended RE character summary:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+| RE-char | definition & example                                                                                  |
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+| +       | definition: repeat previous subexpression one or more times                                           |
+|         | example: search lines containing "god" "good" "goood" etc... ---> egrep 'go+d' regular_express.txt    |
++---------+-------------------------------------------------------------------------------------------------------+
+| ?       | definition: repeat previous subexpression zero or one time                                            |
+|         | example: search lines containing string "gd" and "god" ---> egrep 'go?d' regular_express.txt          |
++---------+-------------------------------------------------------------------------------------------------------+
+| =       | definition: use method or find out several strings                                                    |
+|         | example: search lines containing "gd" or "good" or "dog" ---> egrep 'gd=good=dog' regular_express.txt |
++---------+-------------------------------------------------------------------------------------------------------+
+| ()      | definition: find out group string                                                                     |
+|         | example: search lines containing "glad" or "good", for g and d were repeated,                         |
+|         | so list la and oo inside () then interval them with = ---> egrep 'g(la=oo)d' regular_express.txt      |
++---------+-------------------------------------------------------------------------------------------------------+
+| ()+     | definition: multi-group recognition                                                                   |
+|         | example: egrep 'A(xyz)+C' regular_express.txt , this instance represent to search                     |
+|         | a string begin with A and end with C, one or more "xyz" strings between them                          |
++---------+-------------------------------------------------------------------------------------------------------+
+| notice: | ! character isn't a special character in RE                                                           |
++---------+-------------------------------------------------------------------------------------------------------+
+
+qualifier
+qualifier is to designate a part(character, subexpression, expression) of RE-expression to occur specified times that satisfy the match, there are six kinds of qualifier:
+*	+	?	{n}	{n,}	{n,m}
+
+
+special declare
++----+--------------------------------------------------------------------------------------------------------------------------------+
+| () | label the start and end position of a subexpression                                                                            |
++----+--------------------------------------------------------------------------------------------------------------------------------+
+| [  | label the start of a bracket expression, all characters inside [] are interpreted as literal meaning except "^" and "-"        |
+|    | e.g.                                                                                                                           |
+|    | [.*] to match "." or "*"                                                                                                       |
+|    | e.g.                                                                                                                           |
+|    | [{bb}{*b}] ===> to match "b" or "*" , the same as [bb*b] i.e. [b*] or [*b]                                                     |
+|    | e.g.                                                                                                                           |
+|    | [*{\.}]& ===> to match "*' or "." at the end of line                                                                           |
++----+--------------------------------------------------------------------------------------------------------------------------------+
+| {  | lable the start of a qualifier expression, all qualifier and any other characters inside {} would not have matching take place |
+|    | e.g.                                                                                                                           |
+|    | {.*} ===> nothing happen                                                                                                       |
++----+--------------------------------------------------------------------------------------------------------------------------------+
+
+RE-EXAMPLE
+---> \<cat\>
+===> match if we can find a start of word position, followed immediately by c.a.t, followed immediately by an end of word position
+===> you can think of them as word-based versions of ^ and $ that match the position at the start and end of a word, respectively.
+
+---> ^(From|Subject|Date):
+===> match the start of the line, then one of "From, Subject, Date", and then match ":"
+
+---> ^From|Subject|Date:
+===> composed of three alternatives, so it matchs "^From" or "Subject" or "Date:"
+
+---> 03[-./]19[-./]76
+===> the dot are not metacharacters, because they are within a character classes. !!! ( Remember, the list of metacharacters and their meanings are different inside and outside of character classes. !!!) The dash are also not class metacharacters in this case because each is the first thing after [ or [^. Had they not been first, as with [.-/], they would be the class range metacharacter.
+
+---> gr[a|e]y
+===> within a class, the '|' character is just a normal character, like "a" and "e"
