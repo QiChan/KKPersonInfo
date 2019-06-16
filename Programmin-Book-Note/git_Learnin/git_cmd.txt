@@ -16,4 +16,86 @@ check remote repo
 7. git remote rm repoName
 delete remote repo's association
 
-8.
+8. what is HEAD
+这要从git的分支说起，git 中的分支，其实本质上仅仅是个指向 commit 对象的可变指针。git 是如何知道你当前在哪个分支上工作的呢？
+其实答案也很简单，它保存着一个名为 HEAD 的特别指针。在 git 中，它是一个指向你正在工作中的本地分支的指针，可以将 HEAD 想象为当前分支的别名。
+
+9. what is checkout (检出）
+git checkout命令的实质就是修改HEAD本身的指向，该命令不会影响分支"游标"（如master）
+HEAD的重置即检出
+
+10. the three states
+Git has three main states that your files can reside in: committed,
+modified, and staged:
+ Committed means that the data is safely stored in your local database.
+ Modified means that you have changed the file but have not committed it to your database yet.
+ Staged means that you have marked a modified file in its current version to go into your next
+commit snapshot.
+
+11. three main sections of a Git project
+the Git directory
+the working tree
+the staging area
+
+The Git directory is where Git stores the metadata and object database for your project. This is the
+most important part of Git, and it is what is copied when you clone a repository from another
+computer.
+
+The working tree is a single checkout of one version of the project. These files are pulled out of the
+compressed database in the Git directory and placed on disk for you to use or modify.
+
+The staging area is a file, generally contained in your Git directory, that stores information about
+what will go into your next commit. Its technical name in Git parlance is the “index”, but the phrase
+“staging area” works just as well.
+
+12. deeply figure out 'git checkout' cmd
+用法一  git checkout [-q] [<commit>] [--] <paths>
+
+用法二  git checkout [<branch>]
+
+用法三 git checkout [-m] [[-b|--orphan] <new_branch>] [<start_point>]
+
+第一种用法的<commit>是可选项，如果省略则相当于从暂存区检出，这和git reset不一样，git reset默认的是HEAD，而git checkout默认的是暂存区，因此重置一般用于重置暂存区（除非使用了--hard参数，否则不会重置工作区），而检出命令主要是覆盖工作区（如果<commit>参数不省略，也会替换暂存区中相关的文件）
+第一种用法不会改变HEAD的头指针，主要用于指定版本的文件覆盖工作区中对应的文件。如果省略了<commit>，则会用暂存区的文件覆盖工作区的文件，否则用指定提交中的文件覆盖暂存区和工作区中对应的文件
+第二种用法最主要的作用是切换分支。如果省略<branch>则相当于对工作区进行状态检查
+第三种用法主要是创建和切换分支（<new_branch>）,新的分支从<start_point>指定的提交开始创建。
+
+下图展示了检出命令和版本库之间的关系
+图在pic_note文件夹中，名为checkout_cmd.jpg
+
+示例用法：
+
+git checkout branch 检出到branch分支，会执行1，2，3步骤。更新HEAD指向以指向branch分支以及用branch指向的树更新暂存区和工作区
+
+git checkout 汇总显示工作区，暂存区与HEAD的差异
+
+git checkout HEAD 效果同上
+-git checkout -- filename 用暂存区中filename文件来覆盖工作区的filename文件。相当于取消自上次执行git add filename命令以来工作区的本地修改
+
+git checkout branch -- filename 维护HEAD的指向不变，用branch所指向的提交的filename文件替换掉工作区和暂存区中相应的文件
+
+git checkout -- . 或者 git checkout .这条命令很危险，会取消所有本地的修改（相当于暂存区）。相当于用暂存区的所有文件直接覆盖本地文件。不给用户任何确认的机会
+
+13. git fetch url
+从远程库获取但不合并
+
+14. git pull url
+从远程库获取并合并到当前本地分支
+
+15. git log --decorate
+shows you where the branch pointers are pointing
+
+16. git branch branchName
+create a new branch
+
+17. git branch -D branchName
+delete local branch
+
+18. git push origin --delete branchName
+delete remote branch
+
+19. git branch -a
+list all branch
+
+20. git push origin kk:kk
+push current branch "kk" to remote branch also named "kk"

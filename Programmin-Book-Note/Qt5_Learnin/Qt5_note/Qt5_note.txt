@@ -123,6 +123,8 @@ Each QThread comes with its own event loop that can process events outside the m
 8. the thread affinity of an obj
 a thread event loop delivers events for all objs that are living in that thread. This includes all objects created in that thread or moved to that thread.
 
+every connected signal/slot is triggered according to the possible events (mouse, keyboard, network, and so on). Because the QThread class inherits the QObject, any QThread can use the signal/slot mechanism. Additionally, the signals keyword can be posted to other threads where they will be processed in the receiving threads' event loop.
+
 9. the values of Qt::ConnectionType
 Qt::AutoConnection: If the receiver lives in the thread that emits the signal, Qt::DirectConnection is used. Otherwise, Qt::QueuedConnection is used.
 
@@ -1231,4 +1233,12 @@ file_.close();
 QJsonObject obj;
 obj.value("all").toInt();
 
-87.
+87. where to emit signal
+once a connection of signal&slot formed, then no matter when and where, as long as you can emit the signal, the corresponding slot would be execute!
+
+88. make a connection of signal&slot between two remote objs
+this two remote objs mean they have neither directly inherits relationship nor both inherit from another class, and the key to make the connection work is: accquire the obj instance's ptr of sender's and receiver's, so we use C++'s inherit and Qt's signal&slot to transit ptr of actual sender's and receiver's, and we could only use this fashion of connect(): connect(sender,SIGNAL(),receiver,SLOT()), and by this method, we should save the ptr transited from remote as type of QObject*.
+
+89.
+
+
