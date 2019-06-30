@@ -176,6 +176,8 @@ just override the QRunnable's run() function and ask QThreadPool to execute your
 Note that the QThreadPool::start() function takes the ownership of job and will automatically delete it when run() finishes. Watch out, this does not change the thread affinity
 like QObject::moveToThread() does with workers! A QRunnable class cannot be reused, it has to be a freshly baked instance.
 
+bool QThreadPool::tryStart() and void QThreadPool::start() are to run QRunnable's run(), could be call multiple times!
+
 16. QtConcurrent and QFuture
 void longRunningFunction();
 QFuture<void> future = QtConcurrent::run(longRunningFunction);
@@ -1176,6 +1178,8 @@ Returns a list of static plugin instances (root components) held by the plugin l
 qApp
 A global pointer referring to the unique application object. It is equivalent to QCoreApplication::instance(), but cast as a QApplication pointer, so only valid when the unique application object is a QApplication.
 
+so the qApp is actually the ptr to the current qt program we are coding.
+
 The QPluginLoader class loads a plugin at run-time.
 
 QObject *QPluginLoader::instance()
@@ -1239,6 +1243,96 @@ once a connection of signal&slot formed, then no matter when and where, as long 
 88. make a connection of signal&slot between two remote objs
 this two remote objs mean they have neither directly inherits relationship nor both inherit from another class, and the key to make the connection work is: accquire the obj instance's ptr of sender's and receiver's, so we use C++'s inherit and Qt's signal&slot to transit ptr of actual sender's and receiver's, and we could only use this fashion of connect(): connect(sender,SIGNAL(),receiver,SLOT()), and by this method, we should save the ptr transited from remote as type of QObject*.
 
-89.
+89. QTcpSocket's error check
 
+QString QIODevice::errorString() const
+Returns a human-readable description of the last device error that occurred.
 
+QTcpSocket::errorString();
+
+90. how to make a class be able to use signal&slot
+the class must inherit from QObject and declare Q_OBJECT in the head of class declaration.
+
+91. QStringLiteral(str)
+The macro generates the data for a QString out of the string literal str at compile time. Creating a QString from it is free in this case, and the generated string data is stored in the read-only segment of the compiled object file.
+使用 QStringLiteral 宏可以在编译期把代码里的常量字符串 str 直接构造为 QString 对象，于是运行时就不再需要额外的构造开销了。
+
+92. get each elem in a list
+foreach(QString fileName, pluginsDir.entryList(dllFilter, QDir::Files))
+
+QStringList QDir::entryList(const QStringList &nameFilters, QDir::Filters filters = NoFilter, QDir::SortFlags sort = NoSort) const
+Returns a list of the names of all the files and directories in the directory, ordered according to the name and attribute filters previously set with setNameFilters() and setFilter(), and sorted according to the flags set with setSorting().
+The name filter, file attribute filter, and sorting specification can be overridden using the nameFilters, filters, and sort arguments.
+Returns an empty list if the directory is unreadable, does not exist, or if nothing matches the specification.
+
+93. T qobject_cast(QObject *object)
+Returns the given object cast to type T if the object is of type T (or of a subclass); otherwise returns 0. If object is 0 then it will also return 0.
+The class T must inherit (directly or indirectly) QObject and be declared with the Q_OBJECT macro.
+
+94. deploy a Qt prj
+run the Qt prj at Release edition, then copy the corresponding xxx.exe to another folder, then run Qt command box, "cd" to
+the folder that created just now, then run "windeployqt xxx.exe".
+
+95. QRunnable could set to not auto delete
+void QRunnable::setAutoDelete(bool autoDelete)
+
+96. possible causes of signal already emit, but slot not responding
+if a signal been emit, and the slot's owner obj been already deleted, then the slot would not execute.
+
+97. Forward declaration
+在编写C++程序的时候，偶尔需要用到前置声明(Forward declaration)。下面的程序中，带注释的那行就是类B的前置说明。这是必须的，因为类A中用到了类B，而类B的声明出现在类A的后面。如果没有类B的前置说明，下面的程序将不同通过编译，编译器将会给出类似“缺少类型说明符”这样的出错提示。
+
+98. generate dll and lib by Qt
+创建一个QT的库项目,删除自动生成的.h和.cpp文件,添加一个接口定义.h文件和一个接口实现类(一个.h一个.cpp).
+
+99. how to debug dll
+set the Qt lib prj to construct in the specifed folder that main program would load the dll.
+
+100. QPluginLoader would load the Qt plugin and could use QPluginLoader::instance() to instantiate
+
+101. signal&slot could not be inherit
+when a signal&slot connection defined, the signal and slot are bound to the specify class, even inherit class have same signal and slot would not be the connection's responding signal and slot.
+
+we could use parent class' slot to call child class' overridde function
+
+102. the most last override virtual function
+if there exist inherits, then the most last override function would be the actual one to execute
+
+103. what a Qt plugin consist:
+  class ExtraFiltersPlugin : public QObject, public FilterInterface //inherits from QObject, and need any other Qxxx class just inherits is ok
+  {
+      Q_OBJECT
+      Q_PLUGIN_METADATA(IID "org.qt-project.Qt.Examples.PlugAndPaint.FilterInterface" FILE "extrafilters.json")
+      Q_INTERFACES(FilterInterface)
+      // only contain above three statements that could form a Qt plugin.
+      ...
+  }
+
+104. same class
+when inherit, wanna using the overridde function, must have the same parent class
+two same class must contain exactly totally same contents, otherwise they are different classes.
+
+105. std::shared_ptr
+std::shared_ptr<classType> obj;
+std::shared_ptr::reset(new classType)
+std::shared_ptr::make_shared<classType>(args);
+
+106. the use of 'typedef', 'extern', '
+typedef std::map<QString, ModelBase*> model_map;
+typedef std::shared_ptr<model_map> model_ptr;
+typedef std::map<QString, mainBase*> main_map;
+typedef std::shared_ptr<main_map> main_ptr;
+
+extern model_ptr model_list;
+extern main_ptr main_list;
+
+extern声明不是定义，也不分配存储空间。事实上，它只是说明变量定义在程序的其他地方。程序中变量可以声明多次，但只能定义一次。
+只有当声明也是定义时，声明才可以有初始化式，因为只有定义才分配存储空间。
+初始化式必须要有存储空间来进行初始化。如果声明有初始化式，那么它可被当作是定义。只有当extern声明位于函数外部时，才可以含有初始化式。
+任何在多个文件中使用的变量都需要有与定义分离的声明，一个文件含有变量的定义，使用该变量的其他文件则包含该变量的声明（而不是定义）。
+
+model_list.reset(new model_map);
+main_list.reset(new main_map);
+just like 'new int'
+
+107.

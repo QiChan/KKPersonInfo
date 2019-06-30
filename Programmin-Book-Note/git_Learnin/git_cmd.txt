@@ -99,3 +99,10 @@ list all branch
 
 20. git push origin kk:kk
 push current branch "kk" to remote branch also named "kk"
+
+21. when another create a new branch "lzc" and you wanna check it out on your local
+git checkout master
+git fetch
+git checkout lzc
+
+22.

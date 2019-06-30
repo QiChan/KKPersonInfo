@@ -156,3 +156,52 @@ fgrep -- fast grep -- is the same as grep -F. It does a literal string search (n
 
 -m NUM, --max-count=NUM
 Stop reading a file after NUM matching lines.
+
+14. down things --- wget
+wget url
+
+15. install Qt5
+download qt-opensource-linux-x64-5.12.4.run
+
+yum install gcc-c++
+yum -y install mesa-libGL-devel
+
+16. accquire execute permission
+chmod +x filename
+
+17. setting environment variable
+append the /etc/profile with:
+export PATH="$PATH:/opt/au1200_rm/build_tools/bin"
+source /etc/profile
+
+18. uname -a
+
+19. wget url
+
+20. firewall relative cmds
+$ systemctl status firewalld
+查看防火墙状态
+
+开启防火墙
+systemctl start firewalld
+
+关闭防火墙
+systemctl stop firewalld
+
+查看当前firewall状态
+firewall-cmd --state
+
+重启firewall
+firewall-cmd --reload
+
+禁止开机启动
+systemctl disable firewalld.service
+
+开启端口
+查看已经开放的端口：
+firewall-cmd --list-ports
+
+开启端口
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+
+21.
