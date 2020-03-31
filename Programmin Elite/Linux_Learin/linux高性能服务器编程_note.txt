@@ -1,0 +1,1107 @@
+1.TCP/IP
+tcp/ip协议族是一个四层协议系统，自底而上分别是数据链路层，网络层，传输层和应用层。
+每一层完成不同的功能，且通过若干协议来实现，上层协议使用下层协议提供的服务。
+
+数据链路层的协议
+ARP协议(Address Resolve Protocol)
+RARP协议(Reverse Address Resolve Protocol)
+以上两协议实现了ip地址和机器物理地址（mac地址）的相互转换
+
+我们可以通过/etc/services文件查看所有知名的应用层协议，以及它们都能使用哪些传输层服务
+所有知名应用层协议使用的端口号都可在/etc/services文件中找到
+
+linux下可以使用arp命令来查看和修改ARP高速缓存 （arp -a)
+
+linux使用/etc/resolv.conf文件来存放DNS服务器的ip地址
+
+linux中/etc/protocols文件定义了所有上层协议对应的protocol字段的数值
+
+以太网帧的MTU是1500字节（可以通过ifconfig命令或者netstat命令查看）,因此它携带的IP数据报的数据部分最多是1480字节（IP头部占用20字节）
+
+我们可以使用route命令或者netstat命令查看路由表
+
+不是发送给本计的IP数据报将由数据报转发子模块来处理，路由器都能执行数据报的转发操作，而主机一般只发送和接收数据报，这是因为主机上/proc/sys/net/ipv4/ip_forward内核参数默认被设置为0。我们可以通过修改它来使能主机的数据报转发功能
+
+/proc/sys/net/ipv4/conf/all/send_redirects内核参数指定是否允许发送ICMP重定向报文，而/proc/sys/net/ipv4/conf/all/accept_redirects内核参数则指定是否允许接收ICMP重定向报文。一般来说，主机只能接收ICMP重定向报文，而路由器只能发送ICMP重定向报文
+
+可以通过修改/proc/sys/net/ipv4/tcp_window_scaling内核变量来启用或关闭窗口扩大因子选项
+
+可以通过修改/proc/sys/net/ipv4/tcp_sack内核变量来启用或关闭选择性确认选项
+
+可以通过修改/proc/sys/net/ipv4/tcp_timestamps内核变量来启用或关闭时间戳选项
+
+tcpdum抓的包，前20个字节是ip数据报的，tcp数据报从第21个字节开始
+
+/proc/sys/net/ipv4/tcp_syn_retries内核变量定义了超时重连的具体方法
+
+内核变量/proc/sys/net/ipv4/tcp_max_orphans指定内核能接管的孤儿连接数目
+内核变量/proc/sys/net/ipv4/tcp_fin_timeout指定孤儿连接在内核中生存的时间
+
+/proc/sys/net/ipv4/tcp_retries1指定在底层IP接管前TCP最少执行的重传次数，默认值是3
+/proc/sys/net/ipv4/tcp_retries2指定连接放弃前tcp最多可以执行的重传次数，默认值是15
+
+/proc/sys/net/ipv4/tcp_congestion_control文件指示机器当前所使用的拥塞控制算法
+
+为了将ernest-laptop设置为Kongming20的HTTP代理服务器，我们需要设置环境变量http_proxy：
+$ export http_proxy="ernest-laptop:3128"  # 在Kongming20上执行
+
+网关就是一个主机
+
+以太网帧需头部需要目的地的MAC地址，才能通过以太网传输
+
+Linux将目标主机名及其对应的IP地址存储在/etc/hosts配置文件中
+
+用户可以通过修改/etc/host.conf文件来自定义系统解析主机名的方法和顺序
+
+数据报序号值（几乎）等于传输数据的字节数
+
+Cookie是服务器发送给客户端的特殊信息（通过HTTP应答的头部字段"Set-Cookie")，客户端每次向服务器发送请求时都需要带上这些信息（通过HTTP请求的头部字段"Cookie")，这样服务器就能区别不同的客户了
+
+linux中的网卡配置文件在/etc/sysconfig/network-scripts/ifcfg-enp0s3 (enp0s3是网卡的名称)
+
+复位报文段
+在某些特殊条件下，TCP连接的一端会向另一端发送携带RST标志的报文段，即复位报文段，以通知对方关闭连接或重新建立连接
+TCP提供了异常终止一个连接的方法，即给对方发送一个复位报文段。一旦发送了复位报文段，发送端所有排队等待发送的数据都将被丢弃
+
+2. 网络编程API
+socket的主要API都定义在sys/socket.h头文件中
+
+主机名和IP地址转换，服务名称和端口号之间转换等相关API都定义在netdb.h
+
+主机字节序和网络字节序之间的转换
+#include <netinet/in.h>
+unsigned long int htonl(unsigned long int hostlong);
+unsigned short int htons(unsigned short int hostshort);
+unsigned long int ntohl(unsigned long int netlong);
+unsigned short int ntohs(unsigned short int netshort);
+
+表示socket地址的是结构体sockaddr，其定义如下：
+#include <bits/socket.h>
+struct sockaddr
+{
+        sa_family_t sa_family;
+        char sa_data[14];
+}
+新的通用socket地址结构体：
+#include <bits/socket.h>
+struct sockaddr_storage
+{
+        sa_family_t sa_family;
+        unsigned long int __ss_align;
+        char __ss_padding[128-sizeof(__ss_align )];
+}
+
+专用socket地址
+UNIX本地域协议族使用如下专用socket地址结构体：
+#include <sys/un.h>
+struct sockaddr_un
+{
+        sa_family_t sin_family;
+        char sun_path[108];
+};
+IPv4专用socket地址结构体：
+struct sockaddr_in
+{
+        sa_family_t sin_family;
+        u_int16_t sin_port;
+        struct in_addr sin_addr;
+};
+IPv4地址结构体：
+struct in_addr
+{
+        u_int32_t s_addr;
+};
+IPv6专用socket地址结构体：
+struct sockaddr_in6
+{
+        sa_family_t sin6_family;
+        u_int16_t sin6_port;
+        u_int32_t sin6_flowinfo;
+        struct in6_addr sin6_addr;
+        u_int32_t sin6_scope_id;
+}
+IPv6地址结构体：
+struct in6_addr
+{
+        unsigned char sa_addr[16];
+}
+所有专用socket地址（以及sockaddr_storage)类型的变量在实际使用时都需要转化为通用socket地址类型sockaddr（强制转换即可），因为所有编程接口使用的地址参数的类型都是sockaddr
+
+点分十进制字符串表示的IPv4地址和用网络字节序整数表示的IPv4地址之间的转换：
+#include <arpa/inet.h>
+in_addr_t inet_addr(const char* strptr);
+int inet_aton(const char* cp, struct in_addr* inp);
+char* inet_ntoa(struct in_addr in);
+
+静态存储变量通常是在变量定义时就分定存储单元并一直保持不变，直至整个程序结束
+
+可重入（reentrant）函数可以由多于一个任务并发使用，而不必担心数据错误。相反，不可重入（non-reentrant）函数不能由超过一个任务所共享
+
+用于进制表示的IP地址和网络字节序表示的IP地址之间转换的函数（同时适用于IPv4和IPv6地址）：
+#include <arpa/inet.h>
+int inet_pton(int af, const char* src, void* dst);
+const char* inet_ntop(int af, const void* src, char* dst, socklen_t cnt);
+
+UNIX/Linux的一个哲学是：所有东西都是文件，可读，可写，可控制，可关闭
+
+创建一个socket：
+#include <sys/types.h>
+#include <sys/socket.h>
+int socket(int domain, int type, int protocol);
+(Linux提供众多errno以表示各种错误）
+
+命名socket
+#include <sys/types.h>
+#include <sys/socket.h>
+int bind(int sockfd, const struct sockaddr* my_addr, socklen_t addrlen);
+
+监听socket
+#include <sys/socket.h>
+int listen(int sockfd, int backlog);
+backlog表示处于完全连接状态的socket的数量上限，处于半连接状态的socket的上限则由/proc/sys/net/ipv4/tcp_max_syn_backlog内核参数定义
+
+接受连接
+#include <sys/types.h>
+#include <sys/socket.h>
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+
+发起连接
+#include <sys/types.h>
+#include <sys/socket.h>
+int connect(int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen);
+
+关闭连接
+#include <unistd.h>
+int close(int fd);
+#include <sys/socket.h>
+int shutdown(int sockfd, int howto);
+
+TCP数据读写
+#include <sys/types.h>
+#include <sys/socket.h>
+ssize_t recv(int sockfd, void *buf, size_t len, int flag);
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+
+UDP数据读写
+#include <sys/types.h>
+#include <sys/socket.h>
+ssize_t recvfrom(int sockfd, void* buf, size_t len, int flags, struct sockaddr* src_addr, socklen_t* addrlen);
+ssize_t sendto(int sockfd, const void* buf, size_t len, int flags, const struct sockaddr* dest_addr, socklen_t addrlen);
+
+通用数据读写函数
+#include <sys/socket.h>
+ssize_t recvmsg(int sockfd, struct msghdr* msg, int flags);
+ssize_t sendmsg(int sockfd, struct msghdr* msg, int flags);
+struct msghdr
+{
+        void msg_name;
+        socklen_t msg_namelen;
+        struct iovec* msg_iov;
+        int msg_iovlen;
+        void* msg_control;
+        socklen_t msg_controllen;
+        int msg_flags;
+};
+struct iovec
+{
+        void *iov_base;
+        size_t iov_len;
+};
+
+带外标记
+#include <sys/socket.h>
+int sockatmark(int sockfd);
+
+地址信息函数
+#include <sys/socket.h>
+int getsockname(int sockfd, struct sockaddr* address, socklen_t* address_len);
+int getpeername(int sockfd, struct sockaddr* address, socklen_t* address_len);
+
+socket选项
+#include <sys/socket.h>
+int getsockopt(int sockfd, int level, int option_name, void* option_value, socklen_t* restrict option_len);
+int setsockopt(int sockfd, int level, int option_name, const void* option_value, socklen_t, option_len);
+
+SO_REUSEADDR选项
+TCP连接的TIME_WAIT状态，服务器程序可以通过设置socket选项SO_REUSEADDR来强制使用被处于TIME_WAIT状态的连接占用的socket地址
+我们也可以通过修改内核参数/proc/sys/net/ipv4/tcp_tw_recycle来快速回收被关闭的socket，从而使得TCP连接根本就不进入TIME_WAIT状态，进而允许应用程序立即重用本地的socket地址
+
+SO_RCVBUF和SO_SNDBUF选项
+俩选项分别表示TCP接收缓冲区和发送缓冲区的大小，不过当我们用setsockopt来设置TCP的接收缓冲区和发送缓冲区的大小时，系统都会将其值加倍，并且不得小于某个最小值
+我们也可以直接修改内核参数/proc/sys/net/ipv4/tcp_rmem和/proc/sys/net/ipv4/tcp_wmem来强制TCP接收缓冲区和发送缓冲区的大小没有最小值限制
+
+SO_RCVLOWAT和SO_SNDLOWAT选项
+俩选项分别表示TCP接收缓冲区和发送缓冲区的低水位标记
+当TCP接收缓冲区中可读数据的总数大于其低水位标记时，I/O复用系统调用将通知应用程序可以从对应的socket上读取数据；当TCP发送缓冲区中的空闲空间（可以写入数据的空间）大于其低水位标记时，I/O复用系统调用将通知应用程序可以往对应的socket上写入数据
+
+SO_LINGER选项
+#include <sys/socket.h>
+struct linger
+{
+        int l_onoff;
+        int l_linger;
+};
+
+网络信息API
+#include <netdb.h>
+struct hostent* gethostbyname(const char* name);
+struct hostent* gethostbyaddr(const void* addr, size_t len, int type);
+#include <netdb.h>
+struct hostent
+{
+        char* h_name;
+        char** h_aliases;
+        int h_addrtype;
+        int h_length;
+        char** h_addr_list;
+};
+
+getservbyname和getservbyport
+#include <netdb.h>
+struct servent* getservbyname(const char* name, const char* proto);
+struct servent* getservbyport(int port, const char* proto);
+#include <netdb.h>
+struct servent
+{
+        char* s_name;
+        char** s_aliases;
+        int s_port;
+        char* s_proto;
+};
+
+getaddrinfo
+int getaddrinfo(const char* hostname, const char* service, const struct addrinfo* hints, struct addrinfo** result);
+struct addrinfo
+{
+        int ai_flags;
+        int ai_family;
+        int ai_socktype;
+        int ai_protocol;
+        socklen_t ai_addrlen;
+        char* ai_canonname;
+        struct sockaddr* ai_addr;
+        struct addrinfo* ai_next;
+};
+#include <netdb.h>
+void freeaddrinfo(struct addrinfo* res);
+
+getnameinfo
+#include <netdb.h>
+int getnameinfo(const struct sockaddr* sockaddr, socklen_t addrlen, char* host, socklen_t hostlen, char* serv, socklen_t servlen, int flags);
+
+Linux下的strerror函数能将数值错误码errno转换成易读的字符串形式
+
+pipe函数
+#include <unistd.h>
+int pipe(int fd[2]);
+#include <sys/types.h>
+#include <sys/socket.h>
+int socketpair(int domain, int type, int protocol, int fd[2]);
+
+dup函数和dup2函数
+#include <unistd.h.
+int dup(int file_descriptor);
+int dup2(int file_descriptor_one, int file_descriptor_two);
+
+readv函数和writev函数
+#include <sys/uio.h>
+ssize_t readv(int fd, const struct iovec* vector, int count);
+ssize_t writev(int fd, const struct iovec* vector, int count);
+
+sendfile函数
+sendfile函数在两个文件描述符之间直接传递数据（完全在内核中操作），从而避免了内核缓冲区和用户缓冲区之间的数据拷贝，效率很高，这被称为零拷贝。
+#include <sys/sendfile.h>
+ssize_t sendfile(int out_fd, int in_fd, off_t* offset, size_t count);
+in_fd必须是一个支持类似mmap函数的文件描述符，即它必须指向真实的文件，不能是socket和管道；而out_fd则必须是一个socket。由此可见，sendfile几乎是为在网络上传输文件而设计的
+
+mmap函数和munmap函数
+mmap函数用于申请一段内存空间。我们可以将这段内存作为进程间通信的共享内存，也可以将文件直接映射到其中。munmap函数则释放由mmap创建的这段内存空间。
+#include <sys/mman.h>
+void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset);
+int munmap(void *start, size_t length);
+
+splice函数
+splice函数用于在两个描述符之间移动数据，也是零拷贝操作
+#include <fcntl.h>
+ssize_t splice(int fd_in, loff_t* off_in, int fd_out, loff_t* off_out, size_t len, unsigned int flags);
+fd_in和fd_out必须至少有一个是管道文件描述符
+
+tee函数
+tee函数在两个管道文件描述符之间复制数据，也是零拷贝操作。
+#include <fcntl.h>
+ssize_t tee(int fd_in, int fd_out, size_t len, unsigned int flags);
+fd_in和fd_out必须都是管道文件描述符
+
+fcntl函数
+正如其名（file control），提供了对文件描述符的各种控制操作。另外一个常见的控制文件描述符属性和行为的系统调用是ioctl，而且ioctl比fcntl能够执行更多的控制。
+#include <fcntl.h>
+int fcntl(int fd, int cmd, ...);
+在网络编程中，fcntl函数通常用来将一个文件描述符设置为非阻塞的
+
+Linux服务器程序规范
+1.Linux服务器程序一般以后台进程形式运行。后台进程又称守护进程（daemon）。它没有控制终端，因为也不会意外接收到用户输入。守护进程的父进程通常是init进程（PID为1的进程）
+2.Linux服务器程序通常有一套日志系统，它至少能输出日志到文件，有的高级服务器还能输出日志到专门的UDP服务器。大部分后台进程都在/var/log目录下拥有自己的日志目录
+3.Linux服务器程序一般以某个专门的非root身份运行。比如mysqld，httpd，syslogd等后台进程，分别拥有自己的运行账户mysql，apache和syslog
+4.linux服务器程序通常是可配置的。服务器程序通常能处理很多命令行选项，如果一次运行的选项太多，则可以用配置文件来管理。绝大多数服务器程序都有配置文件，并存放在/etc目录下
+5.Linux服务器进程通常会在启动的时候生成一个PID文件并存入/var/run目录中，以记录该后台进程的PID。
+6.Linux服务器程序通常需要考虑系统资源和限制，以预测自身能承受多大负荷，比如进程可用文件描述符总数和内存总量等
+
+Linux系统日志
+服务器的调试和维护都需要一个专业的日志系统---rsyslogd，rsyslogd守护进程既能接收用户进程输出的日志，又能接收内核日志。用户进程是通过调用syslog函数生成系统日志的。该函数将日志输出到一个UNIX本地域socket类型（AF_UNIX)的文件/dev/log中，rsyslogd则监听该文件以获取用户进程的输出。内核日志由printk等函数打印至内核的环状缓存（ring buffer）中。环状缓存的内容直接映射到/proc/kmsg文件中。rsyslogd则通过读取该文件获得内核日志。
+rsyslogd的主配置文件时/etc/rsyslog.conf
+
+
+syslog函数
+应用程序使用syslog函数与rsyslogd守护进程通信
+#include <syslog.h>
+void syslog(int priority, const char* message, ...);
+#include <syslog.h>
+void openlog(const char* ident, int logopt, int facility);
+下面函数用于设置syslog的日志掩码：
+int setlogmask(int maskpri);
+下面函数关闭日志功能：
+#include <syslog.h>
+void closelog();
+
+用户信息
+UID：真实用户ID
+EUID：有效用户ID
+GID：真实组Id
+EGID:有效组ID
+一个进程拥有两个用户ID: UID和EUID。EUID存在的目的是方便资源访问：它使得运行程序（该程序设置了set-user-id标志）的用户拥有该程序的有效用户的权限。EGID也是类似的作用
+
+切换用户
+getgid();
+getuid();
+setgid();
+setuid();
+
+进程间关系
+进程组
+Linux下每个进程都隶属于一个进程组，因此他们除了PID信息外，还有进程组ID（PGID），可用如下函数获取指定进程的PGID：
+#include <unistd.h>
+pid_t getpgid(pid_t pid);
+每个进程组都有一个首领进程，其PGID和PID相同。进程组将一直存在，直到其中所有进程都退出，或者加入到其他进程组
+下面的函数用于设置PGID：
+#include <unistd.h>
+int setpgid(pid_t pid, pid_t pgid);
+
+会话
+一些有关联的进程组将形成一个会话（session），下面的函数用于创建一个会话：
+#include <unistd.h>
+pid_t setsid(void);
+Linux进程并未提供所谓会话ID（SID）的概念，但Linux系统认为它等于会话首领所在的进程组的PGID，并提供了如下函数来读取SID:
+#include <unistd.h>
+pid_t getsid(pid_t pid);
+
+用ps命令查看进程关系
+执行ps命令可查看进程，进程组和会话之间的关系
+$ ps -o pid,ppid,pgid,sid,comm | less
+PPID(父进程PID)
+若进程的PID,PGID,SID都相同，则该进程即是会话的首领，也是所在进程组的首领
+
+系统资源限制
+Linux系统资源限制可以通过如下一对函数来读取和设置：
+#include <sys/resource.h>
+int getrlimit(int resource, struct rlimit *rlim);
+int setrlimit(int resource, const struct rlimit *rlim);
+struct rlimit
+{
+        rlim_t rlim_cur;
+        rlim_t rlim_max;
+};
+
+改变工作目录和根目录
+Web服务器的逻辑根目录并非文件系统的根目录"/"，而是站点的根目录（对于Linux的Web服务来说，该目录一般是/var/www/
+获取进程当前工作目录和改变进程工作目录的函数分别是：
+#include <unistd.h>
+char* getcwd(char* buf, size_t size);
+int chdir(const char* path);
+
+改变进程根目录的函数是chroot
+#include <unistd.h>
+int chroot(const char* path);
+
+服务器程序后台化
+#include <unistd.h>
+int daemon(int nochdir, int noclose);
+黑洞 /dev/null
+
+服务器模型
+C/S（客户端/服务器)模型
+C/S模型的逻辑很简单。服务器启动后，首先创建一个（或多个）监听socket，并调用bind函数将其绑定到服务器感兴趣的端口上，然后调用listen函数等待客户连接。服务器稳定运行后，客户端就可以调用connect函数向服务器发起连接了。由于客户连接请求是随机到达的异步事件，服务器需要使用某种I/O模型来监听这一事件。
+
+P2P(Peer to Peer，点对点)
+P2P模型可以看作C/S模型的拓展：每台主机既是客户端，又是服务器
+
+单个服务器和服务器机群，都能提供完整服务
+--------------------------------------------------------------------------------
+模块		|	单个服务器程序		|		服务器机群	|
+--------------------------------------------------------------------------------
+I/O处理单元   	|	处理客户连接，读写网络数据	|	作为接入服务器，实现负载均衡	|
+--------------------------------------------------------------------------------
+逻辑单元	     	|	业务进程或线程		|	逻辑服务器		|
+--------------------------------------------------------------------------------
+网络存储单元   	|	本地数据库，文件或缓存	|	数据库服务器		|
+--------------------------------------------------------------------------------
+请求队列      	|	各单元之间的通信方式	|	各服务器之间的永久TCP连接	|
+--------------------------------------------------------------------------------
+
+I/O处理单元是服务器管理客户连接的模块。它通常要完成以下工作：等待并接受新的客户连接，接收客户数据，将服务器响应数据返回给客户端。但是，数据的收发不一定在I/O处理单元中执行，也可能在逻辑单元中执行，具体在何处执行取决于事件处理模式。对于一个服务器机群来说，I/O处理单元是一个专门的接入服务器，它实现负载均衡，从所有逻辑服务器中选取负荷最小的一台来为新客户服务
+
+一个逻辑单元通常是一个进程或线程。它分析并处理客户数据，然后将结果传递给I/O处理单元或者直接发送给客户端（具体使用哪种方式取决于事件处理模式）。对服务器机群而言，一个逻辑单元本身就是一台逻辑服务器。服务器通常拥有多个逻辑单元，以实现对多个客户任务的并行处理。
+
+网络存储单元可以是数据库，缓存和文件，甚至是一台独立的服务器。但它不是必须的单元。
+
+请求队列是各单元之间的通信方式的抽象。I/O处理单元接收到客户请求时，需要以某种方式通知一个逻辑单元来处理该请求。同样，多个逻辑单元同时访问一个存储单元时，也需要采用某种机制来协调处理竞态条件。请求队列通常被实现为池的一部分。对于服务器机群而言，请求队列是各台服务器之间预先建立的，静态的，永久的TCP连接。这种TCP连接能提高服务器之间交换数据的效率，因为它避免了动态建立TCP连接导致的额外的系统开销
+
+I/O模型
+阻塞和非阻塞的概念能应用于所有文件描述符，而不仅仅是socket。
+
+我们称阻塞的文件描述符为阻塞I/O，称非阻塞的文件描述符为非阻塞I/O。
+
+针对阻塞I/O执行的系统调用可能因为无法立即完成而被系统挂起，直到等待的事件发生为止。
+
+针对非阻塞I/O执行的系统调用则总是立即返回，而不管事件是否已经发生。如果事件没有立即发生，这些系统调用就返回-1，和出错的情况一样，此时我们必须根据errno来判断。所以，只有在事件已经发生的情况下操作非阻塞I/O（读，写等），才能提高程序效率。因此，非阻塞I/O通常要和其他I/O通知机制一起使用，比如I/O复用和SIGIO信号
+
+I/O复用是最常使用的I/O通知机制，指的是，应用程序通过I/O复用函数向内核注册一组事件，内核通过I/O复用函数把其中就绪的事件通知给应用程序。I/O复用函数本身是阻塞的，他们能提高程序效率的原因在于他们具有同时监听多个I/O事件的能力
+
+SIGIO信号也可以用来报告I/O事件，我们可以为一个目标文件描述符指定宿主进程，则被指定的宿主进程将捕获到SIGIO信号。这样，当目标文件描述符上有事件发生，SIGIO信号的信号处理函数被触发，我们也就可以在该信号处理函数中对目标描述符执行非阻塞I/O操作了
+
+从理论上说，阻塞I/O，I/O复用和信号驱动I/O都是同步I/O模型。因为这三种模型中，I/O的读写操作，都是在I/O事件发生之后，由应用程序来完成的。
+对异步I/O而言，用户可以直接对I/O执行读写操作，这些操作告诉内核用户读写缓冲区的位置，以及I/O操作完成之后内核通知应用程序的方式。异步I/O的读写操作总是立即返回，而不论I/O是否是阻塞的，因为真正的读写操作已经由内核接管。也就是说，同步I/O模型要求用户代码自行执行I/O执行I/O操作（将数据从内核缓冲区读入用户缓冲区，或将数据从用户缓冲区写入内核缓冲区），而异步I/O机制则由内核来执行I/O操作（数据在内核缓冲区和用户缓冲区之间的移动是由内核在"后台"完成的）。
+
+可以这样认为，同步I/O向应用程序通知的是I/O就绪(到达)事件，而异步I/O向应用程序通知的是I/O完成事件
+
+I/O模型对比
+--------------------------------------------------------------------------------------------------
+I/O模型		|	读写操作和阻塞阶段								|
+--------------------------------------------------------------------------------------------------
+阻塞I/O		|	程序阻塞于读写函数								|
+--------------------------------------------------------------------------------------------------
+I/O复用		|	程序阻塞于I/O复用系统调用，但可同时监听多个I/O事件，对I/O本身的读写操作是非阻塞的	|
+--------------------------------------------------------------------------------------------------
+SIGIO信号	|	信号触发读写就绪事件，用户程序执行读写操作。程序没有阻塞阶段			|
+--------------------------------------------------------------------------------------------------
+异步I/O		|	内核执行读写操作并触发读写完成事件。程序没有阻塞阶段				|
+--------------------------------------------------------------------------------------------------
+
+两种高效的事件处理模式
+服务程序器通常需要处理三类事件：I/O事件，信号及定时事件。
+两种高效的事件处理模式：Reactor和Proactor
+
+Reactor模式
+它要求主线程（I/O处理单元）只负责监听文件描述符上是否有事件发生，有的话就立即将该事件通知工作线程（逻辑单元）。除此之外，主线程不做任何其他实质性的工作。读写数据，接受新的连接，以及处理客户请求均在工作线程中完成。
+使用同步I/O模型（以epoll_wait为例）实现的Reactor模式的工作流程是：
+1）主线程往epoll内核事件表中注册socket上的读就绪事件
+2）主线程调用epoll_wait等待socket上有数据可读
+3）当socket上有数据可读时，epoll_wait通知主线程。主线程则将socket可读事件放入请求队列。
+4）睡眠在请求队列上的某个工作线程被唤醒，它从socket读取数据，并处理客户请求，然后往epoll内核事件表中注册该socket上的写就绪事件
+5）主线程调用epoll_wait等待socket可写
+6）当socket可写时，epoll_wait通知主线程。主线程将socket可写事件放入请求队列
+7）睡眠在请求队列上的某个工作线程被唤醒，它往socket上写入服务器处理客户请求的结果
+
+Proactor模式
+Proactor模式将所有I/O操作都交给主线程和内核来处理，工作线程仅仅负责业务逻辑
+使用异步I/O模型（以aio_read和aio_write为例）实现的Proactor模式的工作流程是：
+1）主线程调用aio_read函数向内核注册socket上的读完成事件，并告诉内核用户读缓冲区的位置，以及读操作完成时如何通知应用程序（这里以信号为例）
+2）主线程继续处理其他逻辑
+3）当socket上的数据被读入用户缓冲区后，内核将向应用程序发送一个信号，以通知应用程序数据已经可用
+4）应用程序预先定义好的信号处理函数选择一个工作线程来处理客户请求。工作线程处理完客户请求之后，调用aio_write函数向内核注册socket上的写完成事件，并告诉内核用户写缓冲区的位置，以及写操作完成时如何通知应用程序（仍然以信号为例）
+5）主线程继续处理其他逻辑
+6）当用户缓冲区的数据被写入socket之后，内核将向应用程序发送一个信号，以通知应用程序数据已经发送完毕
+7）应用程序预先定义好的信号处理函数选择一个工作线程来做善后处理，比如决定是否关闭socket
+
+模拟Proactor模式
+使用同步I/O模型（仍然以epoll_wait为例）模拟出的Proactor模式的工作流程如下：
+1）主线程往epoll内核事件表中注册socket上的读就绪事件
+2）主线程调用epoll_wait等待socket上有数据可读
+3）当socket上有数据可读时，epoll_wait通知主线程。主线程从socket循环读取数据，直到没有更多数据可读，然后将读取到的数据封装成一个请求对象并出入请求队列。
+4）睡眠在请求队列上的某个工作线程被唤醒，它获德请求对象并处理客户请求，然后往epoll内核事件表中注册socket上德写就绪事件
+5）当socket可写时，epoll_wait通知主线程。主线程往socket上写入服务器处理客户请求的结果
+
+两种高效的并发模式
+并发编程的目的是让程序“同时”执行多个任务。由于I/O操作的速度远没有CPU的计算速度快，所以让程序阻塞于I/O操作将浪费大量的CPU时间。并发编程主要有多进程和多线程两种方式。
+并发模式是指I/O处理单元和多个逻辑单元之间协调完成任务的方法。服务器主要有两种并发编程模式：半同步/半异步模式和领导者/追随者模式。
+
+半同步/半异步模式
+I/O模型中的同步异步与并发模式中的同步异步是完全不同的两回事，并发模式中，“同步”指的是程序完全按照代码序列的顺序执行；“异步”指的是程序的执行需要由系统事件来驱动。常见的系统事件包括中断，信号等。
+半同步/半异步模式中，同步线程用于处理客户逻辑，异步线程用于处理I/O事件。异步线程监听到客户请求后，就将其封装成请求对象并插入请求队列中。请求队列将通知某个工作在同步模式的工作线程来读取并处理该请求对象。
+在服务器程序中，如果结合考虑两种事件处理模式和几种I/O模型，则半同步/半异步模式就存在多种变体。
+每个线程都能有自己的事件循环。
+
+领导者/追随者模式
+这个模式是多个工作线程轮流获得事件源集合，轮流监听，分发并处理事件的一种模式。在任意时间点，程序都仅有一个领导线程，它负责监听I/O事件。而其他线程则都是追随者，他们休眠在线程池中等待成为新的领导者。当前的领导者如果监测到I/O事件，首先要从线程池中推选出新的领导者线程，然后处理I/O事件。此时，新的领导者等待新的I/O事件，而原来的领导者则处理I/O事件，二者实现了并发。
+
+有限状态机
+指的是类似与switch-case语句这种根据不同状态有不同处理逻辑的方法。
+
+池
+  如果服务器硬件资源“充裕”，则提高服务器性能的一个很直接的方法就是以空间换时间，即“浪费”服务器的硬件资源，以换取其运行效率。这就是“池”的概念，池是一组资源的集合，这组资源在服务器启动之初就被完全创建好并初始化，这称为静态资源分配。当需要相关资源时，可以直接从池中获取，无须动态分配，显然直接从池中取得所需资源比动态分配资源的速度要快得多，因为分配系统资源的系统调用都是很耗时的。当不需要相关资源时，直接放回池中，无须执行系统调用来释放资源。从最终的效果来看，池相当于服务器管理系统资源的应用层设施，它避免了服务器对内核的频繁访问。
+  池中的资源是预先静态分配的，就无法预期应该分配多少资源。最简单的解决方案就是分配“足够多”的资源，即针对每个可能的客户连接都分配必要的资源。这通常会导致资源的浪费，因为任一时刻的客户数量都可能远远没有达到服务器能支持的最大客户数量。好在这种资源的浪费对服务器来说一般不会构成问题。还有一种解决方案是预先分配一定的资源，此后如果发现资源不够用，就再动态分配一些并加入池中。
+  根据不同的资源类型，池可分为多种，常见的有内存池，进程池，线程池和连接池。
+  内存池通常用于socket的接收缓存和发送缓存。
+  进程池和线程池通常用于处理新到来的客户请求
+  连接池通常用于服务器或服务器机群的内部永久连接。
+
+数据复制
+  高性能服务器应该避免不必要的数据复制，尤其是当数据复制发生在用户代码和内核之间的时候。若内核可以直接处理socket或者文件读入的数据，则应用程序就没必要将这些数据从内核缓冲区复制到应用程序缓冲区中。这里说的“直接处理”指的是应用程序不关心这些数据的内容，不需要对它们做任何分析。
+  此外，用户代码内部（不访问内核）的数据复制也是应该避免的。利用共享内存，指针（指向下次要访问的起始位置）等
+
+上下文切换和锁
+  不应该使用过多的工作线程（或工作进程），否则线程间的切换将占用大量的CPU时间，服务器真正用于处理业务逻辑的CPU时间的比重就显得不足了。因此，为每个客户连接都创建一个工作线程的服务器模型是不可取的。而一个线程同时处理多个客户连接的模型是比较合理的。多线程服务器的一个优点是不同线程可以同时运行在不同的CPU上。当线程的数量不大于CPU的数目时，上下文的切换就不是问题了。
+  锁通常被认为是导致服务器效率低下的一个因素，因为由它引入的代码不仅不处理任何业务逻辑，而且需要访问内核资源。所以如果服务器由更好的解决方案，就应该避免使用锁。如果服务器必须使用“锁”，则可以考虑减小锁的粒度(加锁粒度就是你要锁住的范围是多大），比如使用读写锁。
+
+I/O复用
+I/O复用使得程序能同时监听多个文件描述符。
+
+select系统调用
+select系统调用的用途是：在一段时间内，监听用户感兴趣的文件描述符上的可读，可写和异常等事件。
+#include <sys/select.h>
+int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout);
+
+poll系统调用
+poll系统调用和select类似，也是在指定事件内轮询一定数量的文件描述符，以测试其中是否有就绪者。poll的原型如下：
+#include <poll.h>
+int poll(struct pollfd* fds, nfds_t nfds, int timeout);
+
+epoll系列系统调用
+epoll是Linux特有的I/O复用函数。它在实现和使用上与select，poll有很大差异。首先，epoll使用一组函数来完成任务，而不是单个函数。其次，epoll把用户关心的文件描述符上的事件放在内核里的一个事件表中，从而无须像select和poll那样每次调用都要重复传入文件描述符集或事件集。但epoll需要使用一个额外的文件描述符，来唯一标识内核中的这个事件表。
+#include <sys/epoll.h>
+int epoll_create(int size);
+
+#include <sys/epoll.h>
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
+
+epoll_wait函数
+它在一段超时时间内等待一组文件描述符上的事件，其原型如下：
+#include <sys/epoll.h>
+int epoll_wait(int epfd, struct epoll_event* events, int maxevents, int timeout);
+-----------------------poll和epoll在应用程序索引就绪文件描述符的效率的差别----------------------------
+/* 如何索引poll返回的就绪文件描述符 */
+int ret = poll(fds, MAX_EVENT_NUMBER, -1);
+/* 必须遍历所有已注册文件描述符并找到其中的就绪者（当然，可以利用ret来稍作优化 */
+for(int i = 0; i < MAX_EVENT_NUMBER; ++i)
+{
+        if(fds[i].revents & POLLIN) /* 判断第i个文件描述符是否就绪 */
+        {
+                int sockfd = fds[i].fd;
+                /* 处理 sockfd */
+        }
+}
+
+/* 如何索引epoll返回的就绪文件描述符 */
+int ret = epoll_wait(epollfd, events, MAX_EVENT_NUMBER, -1);
+/* 仅遍历就绪的ret个文件描述符 */
+for(int i = 0; i < ret; i++)
+{
+        int sockfd = events[i].data.fd;
+        /* sockfd肯定就绪，直接处理 */
+}
+------------------------------------------------------------------------------------------------
+
+LT和ET模式
+epoll对文件描述符的操作有两种模式：LT（Level Trigger）和ET（Edge Trigger）模式。LT模式shi 默认的工作模式，ET模式是epoll的高效工作模式。
+ET模式下，epoll_wait检测到事件发生并通知应用程序后，程序可以不立即处理该事件，这样下次调用epoll_wait时，epoll_wait还会再次向应用程序通告此事件。
+LT模式下，epoll_wait检测到事件发生并通知应用程序后，程序必须立即处理该事件，因为后续的epoll_wait调用不再向应用程序通知这一事件。
+所以, ET模式很大程度上降低了同一个epoll事件被重复触发的次数，因此效率要比LT模式高。
+
+EPOLLONESHOT事件
+  即使我们使用ET模式，一个socket上的某个事件还是可能被触发多次。比如一个线程（或进程）在读取完某个socket上的数据后开始处理这些数据，而在数据的处理过程中该socket上又又新数据可读（EPOLLIN再次被触发），此时另外一个线程被唤醒来读取这些新的数据。于是就出现了两个线程同时操作一个socket的局面。
+  我们期望的是一个socket连接在任一时刻都只被一个线程处理。
+  对于注册了EPOLLONESHOT事件的文件描述符，操作系统最多触发其上注册的一个可读，可写或者异常事件，且只触发一次，除非我们使用epoll_ctl函数重置该文件描述符上注册的EPOLLONESHOT事件。这样，当一个线程在处理某个socket时，其他线程是不可能又机会操作该socket的。但该socket被线程处理完毕后，应该立即重置这个socket上的EPOLLONESHOT事件,以确保socket下次事件就绪时，有任一线程能接手处理。
+  所以，尽管一个socket在不同时间可能被不同的线程处理，但同一时刻肯定只有一个线程在为它服务。这就保证了连接的完整性，从而避免了很多可能的竞态条件。
+
+系统允许打开的最大文件描述符数目65535(/proc/sys/fs/file-max)
+
+I/O复用的高级应用一：非阻塞connect
+通过非阻塞connect，我们就能同时发起多个连接并一起等待
+
+I/O复用的高级应用二：聊天室程序
+
+I/O复用的高级应用三：同时处理tcp和udp
+
+查看xxx守护进程的PID:
+$ cat /var/run/xxx.pid
+
+信号
+信号是由用户，系统或者进程发送给目标进程的信息，以通知目标进程某个状态的改变或系统异常，服务器程序必须处理（或至少忽略）一些常见的信号，以免异常终止。
+
+发送信号
+Linux下，一个进程给其他进程发送信号的API是kill函数：
+#include <sys/types.h>
+#include <signal.h>
+int kill(pid_t pid, int sig);
+
+信号处理方式
+目标进程在收到信号时，需要定义一个接收函数来处理之。信号处理函数的原型如下：
+#include <signal.h>
+typedef void(*_sighandler_t){int};
+
+信号的默认处理方式有如下几种：结束进程（Term），忽略信号（Ign），结束进程并生成核心转储文件（Core），暂停进程（Stop），以及继续进程（Cont）
+
+Linux信号
+Linux可用的信号都定义在bits/signum.h头文件中
+
+信号函数
+signal系统调用
+要为一个信号设置处理函数，可以使用下面的signal系统调用：
+#include <signal.h>
+_sighandler_t signal(int sig, _sighandler_t _handler)
+
+sigaction系统调用
+设置信号处理函数的更健壮的接口是如下的系统调用：
+#include <signal.h>
+int sigaction(int sig, const struct sigaction* act, struct sigaction* oact);
+
+信号集
+信号集函数
+Linux使用数据结构sigset_t来表示一组信号
+
+进程信号掩码
+如下函数可用于设置或查看进程的信号掩码：
+#include <signal.h>
+int sigprocmask(int _how, _const sigset_t* _set, sigset_t* _oset);
+
+被挂起的信号
+如下函数可以获得进程当前被挂起的信号集：
+#include <signal.h>
+int sigpending(sigset_t* set);
+
+统一事件源
+信号在处理期间，系统不会再次触发它
+
+网络编程相关信号
+SIGHUP
+当挂起进程的控制终端时，SIGHUP信号将被触发。对于没有控制终端的网络后台程序而言，他们通常利用SIGHUP信号来强制服务器重读配置文件。
+
+操作系统中睡眠、阻塞、挂起的区别形象解释：
+首先这些术语都是对于线程来说的。对线程的控制就好比你控制了一个雇工为你干活。你对雇工的控制是通过编程来实现的。
+挂起线程的意思就是你对主动对雇工说：“你睡觉去吧，用着你的时候我主动去叫你，然后接着干活”。
+使线程睡眠的意思就是你主动对雇工说：“你睡觉去吧，某时某刻过来报到，然后接着干活”。
+线程阻塞的意思就是，你突然发现，你的雇工不知道在什么时候没经过你允许，自己睡觉呢，但是你不能怪雇工，肯定你这个雇主没注意，本来你让雇工扫地，结果扫帚被偷了或被邻居家借去了，你又没让雇工继续干别的活，他就只好睡觉了。至于扫帚回来后，雇工会不会知道，会不会继续干活，你不用担心，雇工一旦发现扫帚回来了，他就会自己去干活的。因为雇工受过良好的培训。这个培训机构就是操作系统。
+
+SIGPIPE
+默认情况下，往一个读端关闭的管道或socket连接中写数据将引发SIGPIPE信号。我们需要在代码中捕获并处理该信号，或者至少忽略它，因为程序接收到SIGPIPE信号的默认行为是结束进程，而我们绝对不希望因为错误的写操作而导致程序退出。
+
+SIGURG
+内核通知应用程序带外数据到达
+
+定时器
+我们要将每个定时事件封装成定时器，并使用某种容器类数据结构，比如链表，排序链表和时间轮，将所有定时器串联起来，以实现对定时事件的统一管理。
+定时是指在一段时间之后触发某段代码的机制，我们可以在这段代码中依次处理所有到期的定时器。Linux提供了三种定时方法，他们是：
+socket选项SO_RCVTIMEO和SO_SNDTIMEO
+SIGALRM信号
+I/O复用系统调用的超时参数
+
+socket选项SO_RCVTIMEO和SO_SNDTIMEO
+它们分别用来设置socket接收数据超时时间和发送数据超时时间。因此，两个选项仅对与数据接收和发送相关的socket专用系统调用有效。我们可以根据系统调用的返回值以及errno来判断超时时间是否已到，进而决定是否开始处理定时任务。
+
+SIGALRM信号
+由alarm和settimer函数设置的实时闹钟一旦超时，将触发SIGALRM信号。因此，我们可以利用该信号的信号处理函数来处理定时任务。
+
+时间轮和时间堆
+时间轮利用哈希
+时间堆利用最小堆
+
+多进程编程
+fork系统调用
+Linux下创建新进程的系统调用是fork，其定义如下：
+#include <sys/types.h>
+#include <unistd.h>
+pid_t fork(void);
+该函数的每次调用都返回两次，在父进程中返回的是子进程的PID，在子进程中返回的是0。该返回值是后续代码判断当前进程是父进程还是子进程的依据。
+
+exec系列系统调用
+exec系列函数可以把当前进程替换为一个新进程，新进程由path或file参数指定。可以使用exec函数将程序的执行从一个程序切换到另一个程序。
+
+处理僵尸进程
+在子进程结束运行之后，父进程读取其退出状态之前，我们称该子进程处于僵尸态。
+另外一种使子进程进入僵尸态的情况是：父进程结束或者异常终止，而子进程继续运行。此时子进程的PPID将被操作系统设置为1，即init进程。init进程接管了该子进程，并等待它结束。
+在父进程退出之后，子进程退出之前，该子进程处于僵尸态。
+
+下面这对函数在父进程中调用，以等待子进程的结束，并获取子进程的返回信息，从而避免了僵尸进程的产生，或者使子进程的僵尸态立即结束：
+#include <sys/types.h>
+#include <sys/wait.h>
+pid_t wait(int* stat_loc);
+pid_t waitpid(pid_t pid, int* stat_loc, int options);
+要在事件已经发生的情况下执行非阻塞调用才能提高程序的效率
+当一个进程结束时，它将给其父进程发送一个SIGCHLD信号
+
+管道
+可用于实现有关联的两个进程（比如父，子进程）间的通信
+
+信号量
+也算是进程间通信的一种
+假设有信号量SV，则对它的P，V操作含义如下：
+P（SV），如果SV的值大于0，就将它减1；如果SV的值为0，则挂起进程的执行
+V（SV），如果有其他进程因为等待SV而挂起，则唤醒之；如果没有，则将SV加1
+
+semget系统调用
+semget系统调用创建一个新的信号量集，或者获取一个已经存在的信号量集：
+#include <sys/sem.h>
+int semget(key_t key, int num_sems, int sem_flags);
+
+semop系统调用
+semop系统调用改变信号量的值，即执行P，V操作。
+#include <sys/sem.h>
+int semop(int sem_id, struct sembuf* sem_ops, size_t num_sem_ops);
+
+semctl系统调用
+semctl系统调用允许调用者对信号量进行直接控制
+#include <sys/sem.h>
+int semctl(int sem_id, int sem_num, int command, ...);
+
+共享内存
+共享内存是最高效的IPC机制，因为它不涉及进程之间的任何数据传输。这种高效率带来的问题是，我们必须用其他辅助手段来同步进程对共享内存的访问，否则会产生竞态条件。
+
+shmget系统调用
+shmget系统调用创建一段新的共享内存，或者获取一段已经存在的共享内存
+#include <sys/shm.h>
+int shmget(key_t key, size_t size, int shmflg);
+
+shmat和shmdt系统调用
+共享内存被创建/获取之后，我们不能立即访问它，而是需要先将它关联到进程的地址空间中。使用完共享内存后，我们也需要将它从进程地址空间中分离。这两项任务分别由如下两个系统调用实现：
+ #include <sys/shm.h>
+ void* shmat(int shm_id, const void* shm_addr, int shmflg);
+ int shmdt(const void* shm_addr);
+
+shmctl系统调用
+shmctl系统调用控制共享内存的某些属性
+#include <sys/shm.h>
+int shmctl(int shm_id, int command, struct shmid_ds* buf);
+
+共享内存的POSIX方法
+通过打开同一个文件，mmap也可以实现无关进程之间的内存共享。Linux提供了另外一种利用mmap在无关进程之间共享内存的方式，这种方式无须任何文件的支持，但它需要先使用如下函数来创建或打开一个POSIX共享内存对象：
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+int shm_open(const char* name, int oflag, mode_t mode);
+和打开的文件最后需要关闭一样，由shm_open创建的共享内存对象使用完之后也需要被删除：
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+int shm_unlink(const char *name);
+
+消息队列
+消息队列是在两个进程之间传递二进制块数据的一种简单有效的方式。每个数据块都有一个特定的类型，接收方可以根据类型来有选择地接收数据，而不一定像管道和命名管道那样必须以先进先出地方式接收数据
+
+msgget系统调用
+msgget系统调用创建一个消息队列，或者获取一个已有的消息队列
+#include <sys/msg.h>
+int msgget(key_t key, int msgflg);
+
+msgsnd系统调用
+msgsnd系统调用把一条消息添加到消息队列中
+#include <sys/msg.h>
+int msgsnd(int msqid, const void* msg_ptr, size_t msg_sz, int msgflg);
+
+msgrcv系统调用
+msgrcv系统调用从消息队列中获取消息
+#include <sys/msg.h>
+int msgrcv(int msqid, void * msg_ptr, size_t msg_sz, long int msgtype, int msgflg);
+
+msgctl系统调用
+msgctl系统调用控制消息队列的某些属性
+#include <sys/msg.h>
+int msgctl(int msqid, int command, struct msqid_ds* buf);
+
+IPC命令
+上述3种System V IPC进程间通信方式都能使用一个全局唯一的键值（key），来描述一个共享资源。当程序调用semget，shmget或者msgget时，就创建了这些共享资源的一个实例
+Linux提供了ipcs命令，以观察当前系统上拥有哪些共享资源实例，还可以使用ipcrm命令来删除遗留在系统中的共享资源
+
+在进程间传递文件描述符
+由于fork调用后，父进程中打开的文件描述符在子进程中仍然保持打开，所以文件描述符可以很方便地从父进程传递到子进程
+传递一个文件描述符并不是传递一个文件描述符的值，而是要在接收进程中创建一个新的文件描述符，并且该文件描述符和发送进程中被传递的文件描述符指向内核中相同的文件表项
+在Linux下，我们可以利用UNIX域socket在进程间传递特殊的辅助数据 ，以实现文件描述符的传递
+
+多线程编程
+pthread_create
+创建一个线程的函数是pthread_create:
+#include <pthread.h>
+int pthread_create(pthread_t* thread, const pthread_attr_t* attr, void* (*start_routine)(void*), void* arg);
+#include <bits/pthreadtypes.h>
+typedef unsigned long int pthread_t;
+Linux上几乎所有资源标识符都是一个整型数，比如socket，各种System V IPC标识符等
+
+pthread_exit
+线程一旦被创建好，内核就可以调度内核线程来执行start_routine函数指针所指向的函数了。线程函数在结束时最好调用如下函数，以确保安全，干净地退出：
+#include <pthread.h>
+void pthread_exit(void* retval);
+
+pthread_join
+一个进程中的所有线程都可以调用pthread_join函数来回收其他线程（前提是目标线程是可回收的），即等待其他线程结束：
+#include <pthread.h>
+int pthread_join(pthread_t thread, void** retval);
+
+pthread_cancel
+有时候我们希望异常终止一个线程，即取消线程：
+#include <pthread.h>
+int pthread_cancel(pthread_t thread);
+接收到取消请求的目标线程可以决定是否允许被取消以及如何取消：
+#include <pthread.h>
+int pthread_setcancelstate(int state, int *oldstate);
+int pthread_setcanceltype(int type, int *oldtype);
+
+线程属性
+pthread_attr_t结构体定义了一套完整的线程属性，线程库定义了一系列函数来操作pthread_attr_t类型的变量，以方便我们获取和设置线程属性，这些函数包括：
+int pthread_attr..(...) 所有以这个名称开头的函数
+
+POSIX信号量
+3种专门用于线程同步的机制：POSIX信号量，互斥量和条件变量
+Linux上，信号量API有两组，一组是IPC信号量，另一组就是POSIX信号量
+POSIX信号量函数的名字都以sem_开头，常用的POSIX信号量函数是下面5个：
+#include <semaphore.h>
+int sem_init(sem_t* sem, int pshared, unsigned int value);
+int sem_destroy(sem_t* sem);
+int sem_wait(sem_t* sem);
+int sem_trywait(sem_t* sem);
+int sem_post(sem_t* sem);
+
+互斥锁
+互斥锁可用于保护关键代码段，以确保其独占式地访问，这有点像一个二进制信号量。当进入关键代码时，我们需要获得互斥锁并将其加锁，这等价于二进制信号量的p操作；当离开关键代码段时，我们需要对互斥锁解锁，以唤醒其他等待该互斥锁的线程，这等价于二进制信号量的V操作
+
+互斥锁基础API
+POSIX互斥锁的相关函数主要有如下5个：
+#include <pthread.h>
+int pthread_mutex_init(pthread_mutex_t* mutex, const pthread_mutexattr_t* mutexattr);
+int pthread_mutex_destroy(pthread_mutex_t* mutex);
+int pthread_mutex_lock(pthread_mutex_t* mutex);
+int pthread_mutex_trylock(pthread_mutex_t* mutex);
+int pthread_mutex_unlock(pthread_mutex_t* mutex);
+
+互斥锁属性
+pthread_mutexattr_t结构体定义了一套完整的互斥锁属性，线程库提供了一系列函数来操作pthread_mutexattr_t类型的变量，以方便我们获取和设置互斥锁属性
+#include <pthread.h>
+int pthread_mutexattr..(...)
+
+死锁
+在一个线程中对一个已经加锁的普通锁再次加锁，将导致死锁（因为新上的锁还没使用到资源所以不会解锁，所以就死锁了）
+两个线程按照不同的顺序来申请两个互斥锁，也容易产生死锁
+
+造成死锁的原因可以概括成三句话：
+当前线程拥有其他线程需要的资源
+当前线程等待其他线程已拥有的资源
+都不放弃自己拥有的资源
+
+条件变量
+如果说互斥锁是用于同步线程对共享数据的访问的话，那么条件变量则是用于在线程之间同步共享数据的值。条件变量提供了一种线程间的通知机制：当某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程
+条件变量的相关函数主要有如下5个：
+int pthread_cond_init(..)
+int pthread_cond_destroy(..)
+int pthread_cond_broadcast(..)
+int pthread_cond_signal(..);
+int pthread_cond_wait(..);
+
+多线程环境
+可重入函数
+如果一个函数能被多个线程同时调用且不发生竞态条件，则我们称它是线程安全的，或者说它是可重入函数。Linux库函数只有一小部分是不可重入的，这些库函数之所以不可重入，主要是因为其内部使用了静态变量。不过Linux对很多不可重入的库函数提供了对应的可重入版本，这些可重入版本的函数名是在函数名尾部加上_r，在多线程程序中调用库函数，一定要使用其可重入版本，否则可能导致预想不到的结果
+
+一个多线程程序的某个线程调用了fork函数，子进程只拥有一个执行线程，它是调用fork的那个线程的完整复制，并且子进程将自动继承父进程中互斥锁（条件变量与之类似）的状态
+pthread提供了一个专门的函数pthread_atfork，以确保fork调用后父进程和子进程都拥有一个清楚的锁状态：
+#include <pthread.h>
+int pthread_atfork(void(*prepare)(void), void (*parent)(void), void (*child)(void));
+
+线程和信号
+每个线程都可以独立地设置信号掩码，多线程环境下我们应该使用pthread版本地sigprocmask函数来设置线程信号掩码：
+#include <pthread.h>
+#include <signal.h>
+int pthread_sigmask(int how, const sigset_t* newmask, sigset_t* oldmask);
+由于进程中的所有线程共享该进程信号，所以线程库将根据线程掩码决定把信号发送给哪个具体的线程，且所有线程共享信号处理函数（当我们在一个线程中设置了某个信号的信号处理函数后，它将覆盖其他线程为同一个信号设置的信号处理函数），所以我们应该定义一个专门的线程来处理所有信号：
+1）在主线程创建出其他子线程之前就调用pthread_sigmask来设置好信号掩码，所有新创建的子线程都将自动继承这个信号掩码，这样做之后，实际上所有线程都不会响应被屏蔽的信号了
+2）在某个线程中调用如下函数来等待信号并处理之：
+#include <signal.h>
+int sigwait(const sigset_t* set, int* sig);
+
+pthread还提供了下面的方法，使得我们可以明确地将一个信号发送给指定的线程：
+#include <signal.h>
+int pthread_kill(pthread_t thread, int sig);
+
+进程池和线程池
+
+服务器调制，调试和测试
+Linux平台的一个优秀特性是内核微调，即我们可以通过修改文件的方式来调整内核参数。
+
+最大文件描述符数
+作为守护进程运行的服务器程序就应该总是关闭标准输入，标准输出和标准错误这3个文件描述符
+Linux对应用程序能打开的最大文件描述符数量有两个层次的限制：用户级限制和系统级限制。用户级限制是指目标用户运行的所有进程总共能打开的文件描述符数；系统级限制是指所有用户总共能打开的文件描述符数
+下面这个命令是最常用的查看用户级文件描述符数限制的方法：
+$ ulimit -n
+我们可以通过如下方式将用户级文件描述符数限制设定为max-file-number：
+$ ulimit -SHn max-file-number
+不过这种设置是临时的，只在当前的session中有效。为永久修改用户级文件描述符数限制，可以在/etc/security/limits.conf文件中加入如下两项：
+* hard nofile max-file-number
+* soft nofile max-file-number
+第一行是指系统的硬限制，第二行是软限制
+如果要修改系统级文件描述符数限制，则可以使用如下命令：
+sysctl -w fs.file-max=max-file-number
+不过该命令也是临时更改系统限制。要永久更改系统级文件描述符数限制，则需要在/etc/sysctl.conf文件中添加如下一项：
+fs.file-max=max-file-number
+然后通过执行 sysctl -p 命令使更改生效
+
+调整内核参数
+几乎所有的内核模块，包括内核核心模块和驱动程序，都在/proc/sys文件系统下提供了某些配置文件以供用户调整模块的属性和行为。通常一个配置文件对应一个内核参数，文件名就是参数的名字，文件的内容是参数的值。我们可以通过命令sysctl -a查看所有这些内核参数
+
+/proc/sys/fs目录下的部分文件
+/proc/sys/fs目录下的内核参数都与文件系统相关，对于服务器程序来说，其中最重要的是如下两个参数：
+/proc/sys/fs/file-max，系统级文件描述符数限制，修改后效果是临时的，且应用程序需要把/proc/sys/fs/inode-max设置为新/proc/sys/fs/file-max值的3~4倍，否则可能导致i节点数不够用
+/proc/sys/fs/epoll/max_user_watches，一个用户能往epoll内核事件的总量。它是指该用户打开的所有epoll实例总共能监听的事件数目，而不是单个epoll实例能监听的事件数目
+
+/proc/sys/net 目录下的部分文件
+内核中网络模块的相关参数都位于/proc/sys/net目录下，其中和TCP/IP协议相关的参数主要位于如下三个子目录中：core，ipv4和ipv6
+/proc/sys/net/core/somaxconn，指定listen监听队列里，能够建立完整连接从而进入ESTABLISHED状态的socket的最大数目
+/proc/sys/net/ipv4/tcp_max_syn_backlog，指定listen监听队列里，能够转移至ESTABLISHED或者SYN_RCVD状态的socket的最大数目
+/proc/sys/net/ipv4/tcp_wmem，它包含3个值，分别指定一个socket的TCP写缓冲区的最小值，默认值和最大值
+/proc/sys/net/ipv4/tcp_rmem，它包含3个值，分别指定一个socket的TCP读缓冲区的最小值，默认值和最大值
+/proc/sys/net/ipv4/tcp_syncookies，指定是否打开TCP同步标签，同步标签通过启动cookie来防止一个监听socket因不停地重复接收来自同一个地址的连接请求（同步报文段），而导致listen监听队列溢出（所谓SYN风暴）
+除了通过直接修改文件的方式来修改这些系统参数外，我们也可以使用sysctl命令来修改它们。这两种修改方式都是临时的。永久的修改方法是在/etc/sysctl.conf文件中加入相应网络参数及其数值，并执行sysctl -p使之生效
+
+gdb调试
+gdb a.out
+常用的指令如下：
+运行指令：
+run（简写r）: 运行程序，当遇到断点后，程序会在断点处停止运行，等待用户输入下一步命令
+continue（简写c） : 继续执行，到下一个断点停止（或运行结束）
+next（简写n） : 单步跟踪程序，当遇到函数调用时，也不进入此函数体；此命令同 step 的主要区别是，step 遇到用户自定义的函数，将步进到函数中去运行，而 next 则直接调用函数，不会进入到函数体内。
+step （简写s）：单步调试如果有函数调用，则进入函数；与命令n不同，n是不进入调用的函数的
+until（简写u）：当你厌倦了在一个循环体内单步跟踪时，这个命令可以运行程序直到退出循环体。
+until+行号： 运行至某行，不仅仅用来跳出循环
+finish： 运行程序，直到当前函数完成返回，并打印函数返回时的堆栈地址和返回值及参数值等信息。
+call 函数（参数)：调用程序中可见的函数，并传递“参数”，如：call gdb_test(55)
+quit（简写q） : 退出gdb
+
+设置断点：
+break n （简写b n）:在第n行处设置断点（可以带上代码路径和代码名称： b OAGUPDATE.cpp:578）
+b fn1 if a＞b：条件断点设置
+break func（break缩写为b）：在函数func()的入口处设置断点，如：break cb_button
+delete 断点号n：删除第n个断点
+disable 断点号n：暂停第n个断点
+enable 断点号n：开启第n个断点
+clear 行号n：清除第n行的断点
+info b （info breakpoints） ：显示当前程序的断点设置情况
+delete breakpoints：清除所有断点：
+
+查看源代码：
+list ：简记为 l ，其作用就是列出程序的源代码，默认每次显示10行。
+list 行号：将显示当前文件以“行号”为中心的前后10行代码，如：list 12
+list 函数名：将显示“函数名”所在函数的源代码，如：list main
+list ：不带参数，将接着上一次 list 命令的，输出下边的内容。
+
+打印表达式
+print 表达式（简记p）: 其中“表达式”可以是任何当前正在被测试程序的有效表达式，比如当前正在调试C语言的程序，那么“表达式”可以是任何C语言的有效表达式，包括数字，变量甚至是函数调用。
+print a：将显示整数 a 的值
+print ++a：将把 a 中的值加1,并显示出来
+print name：将显示字符串 name 的值
+print gdb_test(22)：将以整数22作为参数调用 gdb_test() 函数
+print gdb_test(a)：将以变量 a 作为参数调用 gdb_test() 函数
+display 表达式：在单步运行时将非常有用，使用display命令设置一个表达式后，它将在每次单步进行指令后，紧接着输出被设置的表达式及值。如： display a
+watch 表达式：设置一个监视点，一旦被监视的“表达式”的值改变，gdb将强行终止正在被调试的程序。如： watch a
+whatis ：查询变量或函数
+info function： 查询函数
+扩展info locals： 显示当前堆栈页的所有变量
+
+查询运行信息
+where/bt ：当前运行的堆栈列表；
+bt backtrace 显示当前调用堆栈
+up/down 改变堆栈显示的深度
+set args 参数:指定运行时的参数
+show args：查看设置好的参数
+info program： 来查看程序的是否在运行，进程号，被暂停的原因。
+
+用gdb调试多进程程序
+子进程从本质上说也是一个进程，我们先找到目标子进程的PID，再将其附加（attach）到gdb调试器上
+attach PID
+
+使用调试器选项follow-fork-mode
+gdb调试器的选项follow-fork-mode允许我们选择程序在执行fork系统调用后是继续调试父进程还是调试子进程，其用法如下：
+set follow-fork-mode mode
+其中，mode的可选值是parent和child，分别表示调试父进程和子进程
+
+用gdb调试多线程程序
+gdb有一组命令可以辅助多线程程序的调试：
+info threads，显示当前可调试的所有线程。gdb会为每个线程分配一个ID，我们可以使用ID来操作对应的线程。ID前面有“*”号的线程是当前被调试的线程
+thread ID， 调试目标ID指定的线程
+set scheduler-locking[off|on|step]，调试多线程程序时，默认除了被调试的线程在执行外，其他线程也在继续执行，但有的时候我们希望只让被调试的线程运行。就可以通过这个命令实现。该命令设置scheduler-locking的值：off表示不锁定任何线程，即所有线程都可以继续执行，这是默认值；on表示只有当前被调试的线程会继续执行；step表示在单步执行的时候，只有当前线程会执行
+
+关于调试进程池和线程池程序的一个不错的方法，是先将池中的进程个数或线程个数减少至1，以观察程序的逻辑是否正确；然后逐步增加进程或线程的数量，以调试进程或线程的同步是否正确
+
+系统监测工具
+netstat
+是一个功能很强大的网络信息统计工具，它可以打印本地网卡接口上的全部连接，路由表信息，网卡接口信息等，我们主要利用显示TCP连接及其状态信息的功能。
+在服务器开发过程中，我们一定要确保每个连接在任一时刻都处于我们期望的状态，所以我们应该习惯于使用netstat命令
+
+vmstat
+virtual memory statistics的缩写，它能实时输出系统的各种资源的使用情况，比如进程信息，内存使用，CPU使用率以及I/O使用情况
+
+ifstat
+interface statistics的缩写，它是一个简单的网络流量监测工具。
+ifstat的每条输出都以KB/s为单位显示各网卡接口上接收和发送数据的速率，所以可以大概符集各个时段服务器的总输入，输出流量。
+
+mpstat
+multi-processor statistics的缩写，能实时监测多处理器系统上每个CPU的使用情况。
+
+question:
+1.内核空间和用户空间
+
+2.如何判断两个IP地址是否属于相同网路ID
+
+3.状态机
+
+4.同步报文段
+tcp报文段包含SYN标志的，就是同步报文段
+
+5.16位紧急指针(urgent pointer)
+
+6.TCP重传定时器溢出
+
+7.子网掩码
+
+8.内存对齐
+
+9.每个使用ET模式的文件描述符都应该是非阻塞的。如果文件描述符是阻塞的，那么读或写操作将会因为没有后续事件而一直处于阻塞状态（饥渴状态）
+
+10.回调函数
+回调函数就是一个参数，将这个函数作为参数传到另一个函数里面，当那个函数执行完之后，再执行传进去的这个函数。这个过程就叫做回调。
+主函数的事先干完，回头再调用传进来的那个函数。
+定义主函数的时候，我们让代码先去执行callback()回调函数，但输出结果却是后输出回调函数的内容。这就说明了主函数不用等待回调函数执行完，可以接着执行自己的代码。所以一般回调函数都用在耗时操作上面。比如ajax请求，比如处理文件等。
+
+11.原子操作
+不可被中断的一个或一系列操作
+
+12.swap空间
+
+13.POSIX
+Portable Operating System Interface of UNIX
+
+14.网关的作用
+就是将两个使用不同协议的网络段连接在一起的设备。它的作用就是对两 个网络段中的使用不同传输协议的数据进行互相的翻译转换
+
+15.优先级
+
+16.堆栈
+就是stack
+
+17. ip段/数字-如192.168.0.1/24是什么意思
+后面这个数字标示了我们的网络号的位数，也就是子网掩码中前多少号为1
+129.168.1.1 /24 这个24就是告诉我们网络号是24位
+也就相当于告诉我们了
+子网掩码是：11111111 11111111 11111111 00000000
+即：255.255.255.0
+172.16.10.33/27 中的/27
+也就是说子网掩码是255.255.255.224 即27个全1
+
+18. 子网掩码
+子网掩码(subnet mask)又叫网络掩码、地址掩码、子网络遮罩，它是一种用来指明一个IP地址的哪些位标识的是主机所在的子网，以及哪些位标识的是主机的位掩码。
+子网掩码不能单独存在，它必须结合IP地址一起使用。子网掩码只有一个作用，就是将某个IP地址划分成网络地址和主机地址两部分。
+子网掩码是一个32位地址，用于屏蔽IP地址的一部分以区别网络标识和主机标识，并说明该IP地址是在局域网上，还是在远程网上。
+子网掩码——屏蔽一个IP地址的网络部分的“全1”比特模式。对于A类地址来说，默认的子网掩码是255.0.0.0；对于B类地址来说默认的子网掩码是255.255.0.0；对于C类地址来说默认的子网掩码是255.255.255.0。
+通过子网掩码，就可以判断两个IP在不在一个局域网内部。
+子网掩码可以看出有多少位是网络号，有多少位是主机号
+
+19. IP
+概念	特征				网络范围		默认掩码
+A类地址	第1个8位中的第1位始终为0		0-127.x.x.x	255.0.0.0/8
+B类地址	第1个8位中的第1、2位始终为10	128-191.x.x.x	255.255.0.0/16
+C类地址	第1个8位中的第1、2、3位始终为110	192-y.x.x.x	255.255.255.0/24
+IP地址包含 网络地址+主机地址，即IP地址=网络地址+主机地址
+同一网段指的是IP地址和子网掩码相与得到相同的网络地址。

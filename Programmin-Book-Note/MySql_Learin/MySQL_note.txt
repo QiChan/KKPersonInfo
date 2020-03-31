@@ -1,4 +1,0 @@
-1. smallest save unit -- record
-InnoDB's save unit is a record in row, if two infos in one column, then the second info belongs to second record.
-
-2.

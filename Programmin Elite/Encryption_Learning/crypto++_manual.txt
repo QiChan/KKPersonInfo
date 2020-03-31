@@ -1,0 +1,31 @@
+1. AES
+AES Encryption:
+
+CryptoPP::AES::Encryption aes_encryption(aesKey, CryptoPP::AES::DEFAULT_KEYLENGTH);
+CryptoPP::CBC_Mode_ExternalCipher::Encryption cbc_encryption(aes_encryption, iv);
+CryptoPP::StreamTransformationFilter cbc_encryptor(cbc_encryption, new CryptoPP::HexEncoder(new CryptoPP::StringSink(encrypt_out)),StreamTransformationFilter::PKCS_PADDING);
+CryptoPP::HexDecoder decryptor(new CryptoPP::StreamTransformationFilter(cbc_decryption, new CryptoPP::StringSink(decrypt_out),StreamTransformationFilter::PKCS_PADDING));
+
+cbc_encryptor.Put(reinterpret_cast<const byte *>(encrypt_in.c_str()), encrypt_in.length());
+cbc_encryptor.MessageEnd();
+
+AES Decryption:
+
+CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption cbc_decryption(aesKey, CryptoPP::AES::DEFAULT_KEYLENGTH, iv);
+CryptoPP::HexDecoder decryptor(new CryptoPP::StreamTransformationFilter(cbc_decryption, new CryptoPP::StringSink(decrypt_out),StreamTransformationFilter::PKCS_PADDING));
+decryptor.Put(reinterpret_cast<const byte *>(decrypt_in.c_str()), decrypt_in.length());
+decryptor.MessageEnd();
+
+2. Base64
+
+Base64 Encode:
+
+string cipher;
+CryptoPP::StringSource(plain, length_in, true, new CryptoPP::Base64Encoder(new CryptoPP::StringSink(cipher), false));
+
+Base64 Decode:
+
+string cipher_str;
+CryptoPP::StringSource(cipher_str, true, new CryptoPP::Base64Decoder(new CryptoPP::StringSink(m_buf)));
+
+3.

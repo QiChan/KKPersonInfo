@@ -1,0 +1,77 @@
+0. 分析方法
+分析一款软件的源代码，最简单有效的方式是从使用入手，这样才能从整体上把握该软件的逻辑结构
+
+1. 基础概述
+我们必须在事件发生前把事件处理器和指定类型的句柄（事件）绑定，才能在事件发生时获取到正确的事件处理器。
+将事件注册到内核。
+事件到达时能获取到对应的事件处理器，用来处理事件。
+
+2. libevent源代码的目录结构
+目录结构内容如下：
+目录名称			目录内容
+.deps			里面存放的plo后缀文件，没搞懂是什么，可能是编译生成的一些文件
+.libs			存放编译生成的.o文件和so文件
+autom4te.cache		也是编译或者安装需要的一些文件，暂时没搞懂具体有什么作用
+cmake			存放cmake文件，配置cmake编译需要的头文件和源文件路径
+compat			只有queue.h 定义了很多宏定义，主要用于singly-linked list,list,simple queue,tail queue,circle queue等结构体
+inlcude			里面当前目录头文件都是之前老版本文件，最新版本使用include/event2里面的头文件，注意在include/event2里面后缀带有compat的头文件都是版本更新后为了向后兼容而存在的，我们这里只研究最新版本，所以会忽略后缀带有compat的文件
+m4			里面存放m4文件，m4是unix下的一种编程语言，m4文件就是用m4语言写的，通常是因为configure会依赖它
+sample			这个不用说，存放的使用libevent的demo代码
+test			存放单元测试的代码
+win32_code		这个目前不明，待后续更新
+
+libevent头文件说明
+头文件内容整理如下：
+头文件			声明内容
+buffer.h		主要是对evbuffer进行操作，围绕struct evbuffer进行各种操作
+bufferevent.h		针对struct bufferevent 进行各种操作
+bufferevent_ssl.h	获取openssl的struct bufferevent
+dns.h			针对struct evdns_base结构体进行各种操作
+event-config.h		存放很多宏定义，是根据编译时的配置生成的，下一篇文章中会重点提到
+event.h			libevent的核心头文件，针对struct event_base结构体进行操作
+http.h			针对struct evhttp进行各种操作
+listener.h		针对struct evconnlistener进行操作，socket的绑定和监听，对套接字操作在这里
+rpc.h			针对struct evrpc_base进行操作，可生成rpc服务器和客户端
+tag.h			暂时来看，是用来将evbuffer转换为具体类型，整形或者字符串或者时间结构体之类的
+thread.h		libevent支持多线程使用
+util.h			防止不支持c99，对很多系统函数进行了封装，以便于支持c99
+visibility.h		定义了一些宏定义，应该是用于动态库调用方面的参数
+注意：后缀带有struct的头文件里面存放的都是结构体，我们这里就不单独做介绍了。
+另外libevent的实现文件.c文件都在下载下来的源代码的一级目录下面，与上面说的目录是在同一级的
+
+2. 单元测试
+是指对软件中的最小可测试单元进行检查和验证
+
+3. RPC
+Remote Procedure Call
+总结一下，RPC要解决的两个问题：
+解决分布式系统中，服务之间的调用问题。
+远程调用时，要能够像本地调用一样方便，让调用者感知不到远程调用的逻辑。
+
+4. #define后面只跟一个参数
+是定义宏，并在预处理过程中将其替换为空字符串（即删除）。
+这样做主要是为了标记某些内容，使程序阅读者能够清楚标记表明的意义，同时又不影响被编译的源代码。
+另外，通常这些标记能被条件编译的预处理命令#ifdef、#ifndef检测到。一个重要的用法是多文件编译中防止头文件被重复包含，如：
+header.h:
+#ifndef _HEADER_
+#define _HEADER_
+/*something*/
+#endif
+a.c
+#include"header.h"
+/*something*/
+main.c
+#include"header.h"
+/*something*/
+这样无论哪个.c文件先被编译，包含header.h以后，之后进入#include后header.h中的_HEADER_已定义，那么#ifndef _HEADER_和#endif之间的代码不会被重复编译，header.h的目标代码只存在于其中一个源文件的目标代码文件中，链接器链接两个源文件编译的目标文件时不会产生因为重复编
+
+5. setbuf()函数详解
+程序输出有两种方式：一种是即时处理方式，另一种是先暂存起来，然后再大块写入的方式，前者往往造成较高的系统负担。因此，c语言实现通常都允许程序员进行实际的写操作之前控制产生的输出数据量。
+这种控制能力一般是通过库函数setbuf实现的。如果buf是一个大小适当的字符数组，那么：
+setbuf(stdout，buf);
+语句将通知输入/输出库，所有写入到stdout的输出都应该使用buf作为输出缓冲区，直到buf缓冲区被填满或者程序员直接调用fflush（译注：对于由写操作打开的文件，调用fflush将导致输出缓冲区的内容被实际地写入该文件），buf缓冲区中的内容才实际写入到stdout中。
+
+6. calloc()
+分配所需的内存空间，并返回一个指向它的指针
+
+7.

@@ -1,0 +1,1427 @@
+1. Lambda
+Lambdas are a great addition to C++. They offer a very practical way of defining short functions in your code. Technically, a lambda is the construction of a closure capable of
+capturing variables in its scope. The full syntax goes like this: [ capture-list ] ( params ) -> ret { body }
+
+capture-list: This defines what variables will be visible inside the lambda scope.
+params: This is the function parameters type list that can be passed to the lambda scope. usually used when the lambda expression assign to a var, and then call the var as a func: var(param1, param2, ..).
+There are no parameters in our case, We might have written [this] () { ... }, but C++11 lets us skip the parentheses altogether.
+ret: This is the return type of the lambda function. Just like params, this parameter can be omitted if the return type is void.
+body: This is obviously your code body where you have access to your capture-list, and params, and which must return a variable with a type ret.
+
+connect(tcpSocket, &QTcpSocket::readyRead, [tcpSocket] {
+    qDebug() << QString::fromLatin1(tcpSocket->readAll());
+
+2. Lambda's capture-list can capture variables by copy or by reference
+You can capture by copy or reference all variables that are reachable in the function
+where you define your lambda with the syntax [=] and [&].
+
+The this variable is a special case of the capture list. You cannot capture it by
+reference [&this] and the compiler will warn you if you are in this situation: [=, this].
+
+3. .pro file
+
+variables
+
+CONFIG
+Specifies project configuration and compiler options. The values are recognized internally by qmake and have special meaning.
+
+The following CONFIG values control compilation flags:
+
+console	| The target is a Win32 console application (app only). The proper include paths, compiler flags and libraries will automatically be added to the project.
+
+----------------------------------------------------
+
+HEADERS
+Defines the header files for the project.
+qmake automatically detects whether moc is required by the classes in the headers, and adds the appropriate dependencies and files to the project for generating and linking the moc files.
+
+--------------------------------------------
+
+INCLUDEPATH
+Specifies the #include directories which should be searched when compiling the project.
+
+-----------------------------
+LIBS
+Specifies a list of libraries to be linked into the project. If you use the Unix -l (library) and -L (library path) flags, qmake handles the libraries correctly on Windows (that is, passes the full path of the library to the linker). The library must exist for qmake to find the directory where a -l lib is located.
+
+-l参数就是用来指定程序要链接的库，-l参数紧接着就是库名，那么库名跟真正的库文件名有什么关系呢？就拿数学库来说，他的库名是m，他的库文件名是libm.so，很容易看出，把库文件名的头lib和尾.so去掉就是库名了
+
+对于windows的".lib"文件，-l后面跟着的是.lib的文件名，注意，比如你的.lib文件时ControlCAN.lib，不要傻乎乎的写成了-lControlCAN.lib，不要带后缀，要写成-lControlCAN,同样，-l后面也没有空格
+
+好了现在我们知道怎么得到库名，当我们自已要用到一个第三方提供的库名字libtest.so，那么我们只要把libtest.so拷贝到/usr/lib里，编译时加上-ltest参数，我们就能用上libtest.so库了（当然要用libtest.so库里的函数，我们还需要与libtest.so配套的头文件）
+
+放在/lib和/usr/lib和/usr/local/lib里的库直接用-l参数就能链接了，但如果库文件没放在这三个目录里，而是放在其他目录里，这时我们只用-l参数的话，链接还是会出错，出错信息大概是：“/usr/bin/ld: cannot find -lxxx”，也就是链接程序ld在那3个目录里找不到libxxx.so，这时另外一个参数-L就派上用场了，比如常用的X11的库，它在/usr/X11R6/lib目录下，我们编译时就要用-L/usr/X11R6/lib -lX11参数，-L参数跟着的是库文件所在的目录名。再比如我们把libtest.so放在/aaa/bbb/ccc目录下，那链接参数就是-L/aaa/bbb/ccc -ltest
+
+e.g.
+INCLUDEPATH += C:/Users/ALienWare_KK/Desktop/netCDF/include/
+LIBS += -LC:/Users/ALienWare_KK/Desktop/netCDF/lib/ -lnetcdf
+
+另外，大部分libxxxx.so只是一个链接，以RH9为例，比如LIBM.so它链接到/lib/libm.so.x，/lib/libm.so.6又链接到/lib/libm-2.3.2.so, 如果没有这样的链接，还是会出错，因为ld只会找libxxxx.so，所以如果你要用到xxxx库，而只有libxxxx.so.x或者libxxxx-x.x.x.so，做一个链接就可以了ln -s libxxxx-x.x.x.so libxxxx.so.
+---------------------------------
+
+QT
+Specifies the Qt modules that are used by your project. For the value to add for each module, see the module documentation.
+
+At the C++ implementation level, using a Qt module makes its headers available for inclusion and causes it to be linked to the binary.
+
+By default, QT contains core and gui, ensuring that standard GUI applications can be built without further configuration.
+
+If you want to build a project without the Qt GUI module, you need to exclude the gui value with the "-=" operator. The following line will result in a minimal Qt project being built:
+
+QT -= gui # Only the core module is used.
+
+----------------------------------------
+
+TARGET
+Specifies the name of the target file. Contains the base name of the project file by default.
+
+For example:
+
+TEMPLATE = app
+TARGET = myapp
+SOURCES = main.cpp
+
+The project file above would produce an executable named myapp on unix and myapp.exe on Windows.
+
+---------------------
+
+TEMPLATE
+Specifies the name of the template to use when generating the project. The allowed values are:
+
+app|Creates a Makefile for building applications (the default). See Building an Application for more information.
+
+lib|Creates a Makefile for building libraries. See Building a Library for more information.
+
+subdirs|Creates a Makefile for building targets in subdirectories. The subdirectories are specified using the SUBDIRS variable.
+
+aux|Creates a Makefile for not building anything. Use this if no compiler needs to be invoked to create the target; for instance, because your project is written in an interpreted language.
+Note: This template type is only available for Makefile-based generators. In particular, it will not work with the vcxproj and Xcode generators.
+
+vcapp|Windows only. Creates an application project for Visual Studio. See Creating Visual Studio Project Files for more information.
+
+vclib|Windows only. Creates a library project for Visual Studio.
+
+代表运行时库的变量
+QMAKE_CFLAGS_DEBUG
+Specifies the C compiler flags for debug builds. The value of this variable is typically handled by qmake or qmake.conf and rarely needs to be modified.
+
+QMAKE_CFLAGS_RELEASE
+Specifies the C compiler flags for release builds. The value of this variable is typically handled by qmake or qmake.conf and rarely needs to be modified.
+
+QMAKE_CXXFLAGS_DEBUG
+Specifies the C++ compiler flags for debug builds. The value of this variable is typically handled by qmake or qmake.conf and rarely needs to be modified.
+
+QMAKE_CXXFLAGS_RELEASE
+Specifies the C++ compiler flags for release builds. The value of this variable is typically handled by qmake or qmake.conf and rarely needs to be modified.
+
+e.g.
+QMAKE_CFLAGS_DEBUG += -MDd
+QMAKE_CXXFLAGS_DEBUG += -MDd
+
+ ————————————————
+版权声明：本文为CSDN博主「灿哥哥」的原创文章，遵循CC 4.0 by-sa版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/caoshangpa/article/details/51416077
+
+4. .o file
+.o 就是object, 也就相当于windows下编译的obj文件, 俗称目标文件.
+.a 就是archive, 也就相当于windows的VC下编译的lib文件, 俗称静态库文件.
+
+.o文件是链接文件，.a是静态库文件，靠.o文件生成，作为一个库为外部程序提供函数，接口。
+生成.o文件：
+gcc -c test.o test.c
+生成.a文件:
+ar cqs test.a test.o
+
+.o 就相当于windows里的obj文件 ，一个.c或.cpp文件对应一个.o文件
+.a 是好多个.o合在一起,用于静态连接 ，即STATIC mode，多个.a可以链接生成一个exe的可执行文件
+.so 是shared object,用于动态连接的,和windows的dll差不多，使用时才载入。
+
+5. convert QString to QByteArray
+QString::toLatin1();
+QString::toLocal8Bit();
+
+6. QNetworkAccessManager::post
+send raw byte array to destination.
+
+7.Qt is an event-driven framework
+a main event loop (or the GUI loop) processes events (user input, graphical, and so on) to refresh the UI.
+Each QThread comes with its own event loop that can process events outside the main loop. If not overridden, run() calls the QThread::exec() function, which starts the thread object's event loop, and waits until exit() is called, returning the value that was passed to exit(). The value returned is 0 if exit() is called via quit(). The function QThread::exec() is meant to be called from within run(). It is necessary to call this function to start event handling. 
+
+8. the thread affinity of an obj
+a thread event loop delivers events for all objs that are living in that thread. This includes all objects created in that thread or moved to that thread.
+
+every connected signal/slot is triggered according to the possible events (mouse, keyboard, network, and so on). Because the QThread class inherits the QObject, any QThread can use the signal/slot mechanism. Additionally, the signals keyword can be posted to other threads where they will be processed in the receiving threads' event loop.
+
+9. the values of Qt::ConnectionType
+Qt::AutoConnection: If the receiver lives in the thread that emits the signal, Qt::DirectConnection is used. Otherwise, Qt::QueuedConnection is used.
+
+Qt::DirectConnection: This slot is invoked immediately when the signal is emitted. The slot is executed in the signaling thread.
+
+Qt::QueuedConnection: This slot is invoked when control returns to the event loop of the receiver's thread. The slot is executed in the receiver's thread.
+
+Qt::BlockingQueuedConnection: This is the same as Qt::QueuedConnection, except that the signaling thread blocks until the slot returns. This connection must not be used if the receiver lives in the signaling thread, or else the application will deadlock (coz signaling thread block and the slot could not be exec).
+
+Qt::UniqueConnection: This is a flag that can be combined with any one of the previous connection types, using a bitwise OR. When Qt::UniqueConnection is set, QObject::connect() will fail if the connection already exists.
+
+10. sender's living thread may not the signaling thread
+It is crucial that you understand that Qt does not care about the emitting object thread affinity, it looks only at the signal "context of execution", such as emit signal in run().
+
+11. move thread
+You can only push an object from your current thread to another thread. Conversely, you cannot pull an object that lives in another thread. You cannot change the thread affinity of an object if the object does not live in your thread.
+
+12. the QThread obj
+this obj's finished() signal is belong to the thread it stand for, though this obj is created in another thread.
+
+13. QMutex lock
+when QMutex lock, any other thread could not access in the code snippet follow after the QMutex lock.
+QMutex mutex;
+int number = 1;
+
+mutex.lock();
+number *= 2;
+mutex.unlock();
+
+The locking/unlocking mechanism is error-prone in complex code. You can easily forget to unlock a mutex in a specific exit condition, causing a deadlock. To simplify this situation, Qt provides a QMutexLocker that should be used where the QMutex needs to be locked:
+
+QMutex mutex;
+QMutexLocker locker(&mutex);
+
+int number = 1;
+number *= 2;
+if (overlyComplicatedCondition) {
+    return;
+} else if (notSoSimple) {
+    return;
+}
+
+The mutex is locked when the locker object is created and will be unlocked when the locker object is destroyed;
+
+14. QThreadPool exec job in separate thread automatically 
+just override the QRunnable's run() function and ask QThreadPool to execute your job in a separate thread.
+
+15. QThreadPool start 
+Note that the QThreadPool::start() function takes the ownership of job and will automatically delete it when run() finishes. Watch out, this does not change the thread affinity
+like QObject::moveToThread() does with workers! A QRunnable class cannot be reused, it has to be a freshly baked instance.
+
+bool QThreadPool::tryStart() and void QThreadPool::start() are to run QRunnable's run(), could be call multiple times!
+
+16. QtConcurrent and QFuture
+void longRunningFunction();
+QFuture<void> future = QtConcurrent::run(longRunningFunction);
+The longRunningFunction() function will be executed in a separated thread obtained from the default QThreadPool class.
+
+17. To pass parameters to a QFuture class and retrieve the result of the operation, use the following code:
+QImage processGrayscale(QImage& image);
+QImage lenna;
+QFuture<QImage> future = QtConcurrent::run(processGrayscale,lenna);
+QImage grayscaleLenna = future.result(); // would blocking current thread
+
+To avoid blocking, QFutureWatcher comes to the rescue:
+QFutureWatcher<QImage> watcher;
+connect(&watcher, &QFutureWatcher::finished,
+this, &QObject::handleGrayscale);
+QImage processGrayscale(QImage& image);
+QImage lenna;
+QFuture<QImage> future = QtConcurrent::run(processImage, lenna);
+watcher.setFuture(future);
+
+18. QtConcurrent MapReduce and FilterReduce
+The MapReduce is a programming model that basically does two things:
+1) Maps or distributes the processing of the dataset among multiple cores of the CPU
+2) Reduces or aggregates the results to provide it to the caller
+
+map operation like this:
+QList images = ...;
+QImage processGrayscale(QImage& image);
+QFuture<void> future = QtConcurrent::mapped(
+images, processGrayscale);
+
+Instead of QtConcurrent::run(), we use the mapped function that takes a list and the function
+to apply to each element in a different thread each time. The images list is modified in place,
+so there is no need to declare QFuture with a template type.
+
+a MapReduce operation looks like this:
+QList images = ...;
+QImage processGrayscale(QImage& image);
+void combineImage(QImage& finalImage, const QImage& inputImage);
+QFuture<void> future = QtConcurrent::mappedReduced(images,processGrayscale,combineImage);
+
+Here we added a combineImage() function that will be called for each result returned by the
+map function, processGrayscale(). It will merge the intermediate data, inputImage, into
+the finalImage. This function is called only once at a time by only one thread, so there is no need to
+use a mutex to lock the result variable.
+
+The FilterReduce follows exactly the same pattern; the filter function simply allows you to
+filter the input list instead of transforming it.
+
+19. send http request
+Requesting information to an HTTP server is a common task. we will rely on three classes:
+QNetworkAccessManager: This class allows your application to send requests and receive replies
+QNetworkRequest: This class holds the request to be sent with all the information (headers, URL, data, and so on)
+QNetworkReply: This class contains the result of a QNetworkRequest class with the headers and the data
+-----------------------------------------send a get request------------------------------------------
+HttpRequest::HttpRequest(QObject* parent) :
+    QObject(parent),mAccessManager()
+    {
+        connect(&mAccessManager, &QNetworkAccessManager::finished,
+                this, &HttpRequest::replyFinished);
+    }
+
+// Request
+void HttpRequest::executeGet()
+{
+    QNetworkRequest request(QUrl("http://httpbin.org/ip"));
+    mAccessManager.get(QNetworkRequest(request));
+}
+
+// Response
+void HttpRequest::replyFinished(QNetworkReply* reply)
+{
+    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    qDebug() << "Reponse network error" << reply->error();
+    qDebug() << "Reponse HTTP status code" << statusCode;
+    qDebug() << "Reply content:" << reply->readAll();
+    reply->deleteLater();
+}
+--------------------------------------------------------------------------------------------------
+
+20. deal with http reply asynchronously
+The QNetworkAccessManager class is designed to be asynchronous, so you do not need to worry about blocking your current thread.
+Which means it would deal with the reply in another thread.
+
+21. delete the http reply
+Note that you are the owner of the QNetworkReply* object. You should not delete it by hand
+(your application might crash if you do so); instead, it's better to use the reply-
+>deleteLater() function, which will let the Qt event loop pick the appropriate moment to
+delete this object.
+
+22. QString's append()
+watch out! the append() would throughly change the original QString's contents.
+
+23. fill QNetWorkRequest with header and item
+creating a QNetworkRequest class with a custom header: Content-Type is now application/x-www-form-urlencoded to respect the HTTP RFC. After that, a URL form is built, ready to be sent with the request. You can add as many items as you wish to the QUrlQuery class.
+
+---------------------------------send a post----------------------------------------------------------
+when we make a search in 知乎, would found the url in broswer is:
+http://www.zhihu.com/search?type=content&q=Qt
+So, we could make the same result by post above url to 知乎 server, and the key-value pairs "type=content" and "q=Qt" could be
+form by QUrlQuery.
+
+
+void HttpRequest::executePost()
+{
+    QNetworkRequest request(QUrl("http://www.zhihu.com/search"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader,
+                      "application/x-www-form-urlencoded");
+    QUrlQuery urlQuery;
+    urlQuery.addQueryItem("type", "content");
+    urlQuery.addQueryItem("q", "Qt");
+
+    QUrl params;
+    params.setQuery(urlQuery);
+
+    QNetworkReply* reply = mAccessManager.post(
+                           request, params.toEncoded());
+    connect(reply, &QNetworkReply::readyRead,
+        [reply] () {
+        qDebug() << "Ready to read from reply";
+    });
+    connect(reply, &QNetworkReply::sslErrors,
+            [this] (QList<QSslError> errors) {
+        qWarning() << "SSL errors" << errors;
+    });
+}
+--------------------------------------------------------------------------------------------------------
+
+----------------------------------post file to server by FormData method------------------------------------
+QHttpMultiPart multiPart(QHttpMultiPart::FormDataType);
+QHttpPart imagePart, textPart;
+description = QString("form-data; name=\"file\";filename=\"").append(picName).append("\"");
+
+textPart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"code\""));
+code = code.remove(QRegExp("[\u4e00-\u9fa5]*"));
+textPart.setBody(code.toLocal8Bit());
+
+imagePart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant(description));
+qDebug() << "description: " << description;
+
+QFile file(picPath);
+if(!file.open(QIODevice::ReadOnly))
+{
+        qDebug() << "file not open!";
+        return false;
+}
+imagePart.setBodyDevice(&file);
+multiPart.append(imagePart);
+multiPart.append(textPart);
+
+QUrl url("http://192.168.1.31:8080/1b/module/fileUpload");
+QNetworkRequest request(url);
+QNetworkReply *reply = mAccessManager.post(request, &multiPart);
+QEventLoop eventLoop;
+connect(reply, SIGNAL(finished()), &eventLoop, SLOT(quit()));
+eventLoop.exec(QEventLoop::ExcludeUserInputEvents);
+
+qDebug() << "Ready to read from reply!";
+QByteArray link = reply->readAll();
+qDebug() << "link is: " << QString(link);
+
+
+if(posId == "0")
+        obj0.insert("pic0", QString(link));
+else if(posId == "1")
+        obj1.insert("pic1", QString(link));
+else if (posId == "2")
+        obj2.insert("pic2", QString(link));
+
+qDebug() << link;
+
+reply->deleteLater();
+------------------------------------------------------------------------------------------------------
+
+----------------------------------post file to server by json method------------------------------------
+QNetworkAccessManager manage;
+    QNetworkRequest req;
+    QJsonObject msg;
+
+    msg.insert("fileStr",QString("16546"));
+    msg.insert("fileName",QString("what.dat"));
+    //qDebug() << QJsonDocument(msg).toJson();;
+    req.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/json"));
+    req.setUrl(QUrl("http://183.63.161.190:8080/1b/dat/dbDat"));
+    QNetworkReply *pReply = manage.post(req, QJsonDocument(msg).toJson());
+
+    QEventLoop eventloop;
+    QObject::connect( pReply,SIGNAL(finished()),&eventloop,SLOT(quit()));
+    eventloop.exec( QEventLoop::ExcludeUserInputEvents);
+
+    qDebug() << "Ready to read from reply";
+    qDebug() << pReply->readAll();
+    pReply->deleteLater();
+    pReply = 0;
+----------------------------------------------------------------------------------------------------
+
+
+24.two signals would received when send http request
+the QNetworkReply::readyRead signal is first called, and after that, the QNetWorkAccessManager::finished signal is called.
+
+25. QEventLoop class
+the current thread which call the QEventLoop::exec() would block that thread, until QEventLoop::quit() called.
+This QEventLoop trick can be used any time a synchronous wait for a Qt signal is needed;
+
+26. the common var gonna be used by several classes
+declare them as global var inside the main() func.
+
+27. Q_OBJECT (it is a macro)
+#define Q_OBJECT \
+public: \
+// skipped details
+static const QMetaObject staticMetaObject; \
+virtual const QMetaObject *metaObject() const; \
+virtual void *qt_metacast(const char *); \
+virtual int qt_metacall(QMetaObject::Call, int, void **); \
+QT_TR_FUNCTIONS \
+private: \
+// skipped details
+qt_static_metacall(QObject *, QMetaObject::Call, int, void **);
+
+
+This macro defines some static functions (these static functions are defined in QMetaObject class ???) and a static QMetaObject, The body of these static functions is implemented in the generated moc file,
+the QMetaObject class is to store all the metainformation for the QObject subclass. It also maintains a correspondence table between the signals and slots of
+your class, and to the signals and slots of any connected class. Each signal and each slot is assigned with a unique index.
+
+The metaObject() function returns the &staticMetaObject for a normal Qt class and a dynamicMetaObject when working with QML objects.
+
+The qt_metacast() function performs a dynamic cast using the name of the class. This function is required because Qt does not rely on standard C++ RTTI (Runtime Type
+Information) to retrieve meta data about an object or a class.
+
+The qt_metacall() directly calls an internal signal or slot by its index. Because an index is used rather than a pointer, there is no pointer dereferencing, and the generated switch
+case can be heavily optimized by the compiler (the compiler can directly include the jump instruction to the specific case very early on, avoiding a lot of branch evaluation). Thus,
+the execution of the signal/slot mechanism is quite fast.
+
+28. the procedure of signal emited till slot called
+Everything is done through the QMetaObject class implementation in the moc file. When a signal keyword is emitted, the function QMetaObject::activate() is
+called with the changed value and the signals index.
+
+29. the connection instance
+The Connection instance stores a pointer to the signal emitter class (sender), the slot receiver class (receiver), and the indexes of the connected signal and slot keywords. When a signal
+is emitted, every connected slot must be called. To be able to do this, every QObject has a linked list of Connection instances for each of its signal, and the same linked list
+of Connection for each of its slot keywords.
+
+30. qmake
+qmake -project
+this command generate the .pro file corresponding all .cpp and .h file under current dir.
+
+/path/to/qt/installation/5.7/gcc_64/bin/qmake -makefile -o Makefile /path/to/sysinfoproject/ch02-sysinfo.pro
+This command will execute qmake in the -makefile mode to generate a Makefile based on your sysinfo.pro file.
+
+Build this Makefile by simply typing the make command.
+
+31. the complete compilation pipeline for a standard qmake project
+1) The qmake command is executed with the project .pro file. It generates a Makefile based on the project file.
+2) The make command is executed, which will call other commands to generate intermediate files.
+3) The uic command stands for User Interface Compiler. It takes all the .ui files (which are basically an XML description of your interface) and generates the corresponding ui_*.h header that you include in your own .cpp (in our ch02-sysinfo project, it is in MainWindow.cpp).
+4) The moc command takes every class containing the Q_OBJECT macro (paired with the superclass QObject) and generates the intermediate moc_*.cpp files, which include everything needed to make the signal/slot framework work.
+5) The g++ command is executed, compiling all your sources' files and intermediate moc files into .o files before finally linking everything in the binary ch02-sysinfo.
+
+32. std::unique_ptr
+auto p = std::make_unique<D>(); // p 是占有 D 的 unique_ptr
+unique_ptr 独占所指向的对象, 同一时刻只能有一个 unique_ptr 指向给定对象(通过禁止拷贝语义, 只有移动语义来实现)
+std::move(p) // transfer the ownership to the other unique_ptr.
+
+way to initialize:
+1) 
+unique_ptr<Investment> up(new Investment());
+2)
+Investment *pInv = new Investment();
+unique_ptr<Investment> up1(pInv);
+3)
+auto pInv = make_unique<Investment>();
+4)
+unique_ptr<Investment> up1 = std::move(up);
+
+33. QVariant
+It is a generic placeholder for any primitive type (char, int, double, and so on) but also complex types (QString, QDate, QPoint, and many more).
+
+What makes QVariant very interesting is that it is possible to store custom types.
+If we wanted to convert SoundEvent class to a QVariant class, we would have added the following in SoundEvent.h:
+class SoundEvent
+{
+    ...
+};
+Q_DECLARE_METATYPE(SoundEvent);
+This macro effectively registers SoundEvent to the QMetaType register, making it available for QVariant.
+
+34. new for loop method
+QVariantList list;
+for (const auto& soundEvent : mSoundEvents) // mSoundEvents is a vector, soundEvent is the var to hold each elem took out form mSoundEvents.
+{
+	list.append(soundEvent->toVariant());
+}
+
+35. QVariant form a QJsonDocument
+We can create a QJsonDocument class from a QVariant class. Notice that the QVariant accepted by QJsonDocument must be a QVariantMap, QVariantList, or QStringList.
+
+36. QJSonDocument::toJson()
+The QJsonDocument::toJson() function can produce an Indented or a Compact JSON format. By default, the format is QJsonDocument::Indented.
+
+37. QJsonDocument::toVariant()
+Notice that the QJsonDocument::toVariant() function can return QVariantList or a QVariantMap depending the nature of the JSON document.
+The returned variant will be a QVariantList if the document is a QJsonArray and a QVariantMap if the document is a QJsonObject.
+
+38. QVariant::Type (QVariant::xxx)
+it's value is QMetaType::xxx, denote what type of variable that a QVariant can contain.
+
+39. QDataStream
+The QDataStream class enables you to serialize binary data to any QIODevice (QAbstractSocket, QProcess, QFileDevice, QSerialPort, and so on). The great advantage of QDataStream is that it encodes the information in a platform-agnostic format. You do not have to worry about the byte order, the operating system, or the CPU.
+
+40. socket.flush()
+The OS keeps socket buffers that wait to be filled before being sent across the wire. Some messages need to be delivered immediately
+
+41. use QDataStream to write data to QByteArray
+QByteArray byteArray;
+QDataStream stream(&byteArray, QIODevice::WriteOnly);
+As a matter of fact, byteArray is passed in the constructor of the QDataStream stream, which is opened in the QIODevice::WriteOnly mode. It means that the stream will output its data to the byteArray.
+
+42. QDataStream transaction
+when you start reading on a QIODevice class, you already know how much you have to read (based on the size of the object you want to fill). However, you might not get all the data in a single read.
+
+in.startTransaction();
+qint8 messageType;
+QByteArray messageData;
+in >> messageType >> messageData;
+
+if (!in.commitTransaction())
+    return;
+
+In the QDataStream class in which we want to read, in.startTransaction() marks the checkpoint in the stream. It will then try to read messageType and messageData atomically. If it cannot do it, in.commitTransaction() returns false and the read data is copied in an internal buffer.
+Upon the next call to this code (more data to read), in.startTransaction() will restore the preceding buffer and try to finish the atomic read.
+
+43. QTcpSocket readyRead() signal
+Each time that data is available to read on the socket will send this signal.
+
+44. QTcpServer
+Because we are subclassing QTcpServer, we can call listen on ourselves. Note that QHostAddress::Any works either for IPv4 and IPv6.
+
+45. connection
+A connection can be made between a signal and a slot from different objects, and even between objects living inside different threads!
+
+46. ceil向上取整floor向下取整
+ceil() make value larger.
+floor() make value smaller.
+
+47. What's QThread
+A QThread instance manages one thread of execution within the program.
+
+48. create and start a thread
+You can subclass QThread to override the run() function, which will be executed in the QThread framework. Here is how you can create and start a QThread:
+QThread thread;
+thread.start();
+The start() function calling will automatically call the run() function of the thread and emit the started() signal. Only at this point will the new thread of execution be created. When run() is completed, the thread object will emit the finished() signal.
+The run() would block at exec() continuing running the thread's event loop, and if the run() is completed then it means exec() been exit and the event loop been over.
+
+[signal] void QThread::started()
+This signal is emitted from the associated thread when it starts executing, before the run() function is called.
+Note: This is a private signal. It can be used in signal connections but cannot be emitted by the user.
+
+[signal] void QThread::finished()
+This signal is emitted from the associated thread right before it finishes executing.
+When this signal is emitted, the event loop has already stopped running. No more events will be processed in the thread, except for deferred deletion events. This signal can be connected to QObject::deleteLater(), to free objects in that thread.
+
+49. thread event loop's life span
+The started() signal will be processed by the Thread event loop only upon the exec() call. It will block and wait until QThread::exit() is called.
+
+50. QThread could work with signal/slot mechanism
+QThread works seamlessly with the signal/slot mechanism, It is able to handle signals and slots in our own QThread.
+
+51. the worker model of using QThread
+things wanna be done in separate thread writes into a class call "worker", then move the worker's instance to another thread by using moveToThread().
+worker->moveToThread(thread);
+
+52. quit a QThread
+void QThread::quit()
+Tells the thread's event loop to exit with return code 0 (success). Equivalent to calling QThread::exit(0).
+This function does nothing if the thread does not have an event loop.
+
+53. QAbstractSocket's waitFor..
+while workin on Qt NetWork programmin, some connectin or data receivin trouble occured, try extra using waitForBytesWritten(), waitForConnected(), waitForDisconnected(), waitForReadyRead().
+
+54. QTimer
+QTimer mRefreshTimer;
+mRefreshTimer.setInterval(updateSeriesDelayMs); 
+connect(&mRefreshTimer, &QTimer::timeout, this, &SysInfoWidget::updateSeries); 
+QTimer::singleShot(startDelayMs,  [this] { mRefreshTimer.start(); });  // after a time interval, execute an operation
+
+55. when override QThread's run() must add exec() inside to start a eventloop.
+
+56. how to connect two different obj's signal and slot
+in somewhere both two obj exist, then use connect() to make connection between two objs.
+
+57. two ways to use connect()
+syntax of a Qt connection:
+connect(sender, &Sender::signalName, receiver, &Receiver::slotName);
+connect(sender, SIGNAL(signalName()), receiver, SLOT(slotName()));
+
+58. trick to synchronous wait for a Qt signal
+QNetworkAccessManager localManager;
+QEventLoop eventLoop;
+QObject::connect(&localManager, &QNetworkAccessManager::finished, &eventLoop, &QEventLoop::quit);
+
+This QEventLoop trick can be used any time a synchronous wait for a Qt signal is needed; use it wisely to avoid blocking the UI thread!
+
+59. when the exe generate by Qt run to err, or all been compile but running shows nothing
+del all Qt's bin path in sys-env-var, then add current Qt's bin path to sys-env-var.
+
+60. enumeration
+enum class State {
+        STOPPED,
+        PLAYING,
+        RECORDING,
+    };
+
+use State::PLAYING to accquire value.
+
+61. QElapsedTimer Class
+The QElapsedTimer class provides a fast way to calculate elapsed times.
+
+QElapsedTimer timer;
+     timer.start();
+
+     slowOperation1();
+
+     qDebug() << "The slow operation took" << timer.elapsed() << "milliseconds";
+
+
+62. open a specified folder
+QString path=QDir::currentPath();//获取程序当前目录
+path.replace("/","\\");//将地址中的"/"替换为"\"，因为在Windows下使用的是"\"。
+QProcess::startDetached("explorer "+path);//打开上面获取的目录
+
+63. replace by regexp
+:lineNum1,lineNum2s/old/new/g
+
+64.std::vector::clear
+Removes all elements from the vector (which are destroyed), leaving the container with a size of 0.
+
+65. QAtomicInteger
+a QAtomicInteger to guarantee an atomic access to the variable.
+
+QAtomicInteger<bool> mIsPlaying;
+mIsPlaying.store(true);
+mIsPlaying.load();
+
+66.auto
+auto可以在声明变量的时候根据变量初始值的类型自动为此变量选择匹配的类型，举个例子：
+
+    int a = 10;
+    auto au_a = a;//自动类型推断，au_a为int类型
+    cout << typeid(au_a).name() << endl;
+
+typeid运算符可以输出变量的类型。程序的运行结果输出了
+int
+
+the 'auto' alse fit for Qt's var type.
+
+67. [static] void QThread::msleep(unsigned long msecs)
+Forces the current thread to sleep for msecs milliseconds.
+
+QThread::msleep(1);
+
+68. QVariant
+
+QVariant variant(21);
+int answer = variant.toInt() * 2;
+
+SoundEvent soundEvent(4365, 0);
+QVariant stored;
+stored.setValue(soundEvent);
+SoundEvent newEvent = stored.value<SoundEvent>();
+qDebug() << newEvent.timestamp;
+
+69. apply space for char**
+char** strNumbers = new char*[前面一维数组的长度];
+
+70. QVariantMap
+
+QVariant SoundEvent::toVariant() const
+{
+    QVariantMap map;
+    map.insert("timestamp", timestamp);
+    map.insert("soundId", soundId);
+    return map;
+}
+
+QVariantMap could implicitly convert to QVariant!
+
+void SoundEvent::fromVariant(const QVariant& variant)
+{
+    QVariantMap map = variant.toMap();
+    timestamp = map.value("timestamp").toLongLong();
+    soundId = map.value("soundId").toInt();
+}
+
+71. get timestamp , correctly way use memcpy
+QByteArray tmp_inByte;
+QDateTime time = QDateTime(QDate(2019,5,28),QTime(16,43,30));
+time.setTimeSpec(Qt::UTC);
+long timestamp = time.toSecsSinceEpoch(); // 时间戳(就是一串数字)
+qDebug() << "time is: " << elem_yg_data_tmp[i];
+qDebug() << "time stamp is: " << timestamp;
+tmp_inByte.resize(sizeof(timestamp)); //gotta resize
+memcpy(tmp_inByte.data(),&timestamp,sizeof(timestamp));
+//tmp_inByte = QString::number(timestamp).toLocal8Bit();
+qDebug() << "tmp_inByte has bytes: " << tmp_inByte;
+time_inByte.append(tmp_inByte);
+
+72. QProcess
+int Connecter::getRestRAM()
+{
+    QProcess process;
+    process.start("free -m");
+    process.waitForFinished();
+    process.readLine();
+    QString str = process.readLine();
+    str.replace("\n","");
+    str.replace(QRegExp("( ){1,}")," ");
+    auto lst = str.split(" ");
+    if(lst.size() == 7)
+    {
+        qDebug() << "free mem is: " << lst.at(3) << "MB";
+        return lst.at(3).toInt();
+    }
+    return -1;
+}
+
+73. regular expression match Chinese Character
+匹配中文字符的正则表达式： [\u4e00-\u9fa5]
+
+74. 左值和右值
+当把一个obj用作右值时，用的是obj的value（它的内容）。
+
+当把一个obj用作左值时，用的是obj的identity（它的内存地址）。
+
+当右值需要时，可以用左值来替换，但反过来不行。
+
+取址符&会产生右值，其他运算符都产生左值。
+
+左值拥有persist state， 右值是literals或temporary obj。
+
+右值引用
+这是一个必须与右值绑定的引用。
+
+右值引用通过&&而不是&来获取。
+
+右值引用的重要属性: 它只能与即将要销毁的obj绑定，所以我们可自由地把资源从右值引用‘移动’至另一个obj。
+
+与任何引用一般，右值引用也只是一个obj的别名而已。
+
+我们不能使常规引用（通过&获得的引用，亦称左值引用）去绑定一个需要conversion的表达式，或一个literals，或一个返回右值的表达式。但右值引用刚好相反：它可以绑定上述的任何表达式，但不能直接绑定一个左值。
+
+返回左值引用的函数，以及assignment，subscript，dereference和prefix increment/decrement 运算符，全都返回左值，所以可以将左值引用与任一绑定。
+
+返回值为非引用的函数，以及arithmetic，relational，bitwise和postfix increment/decrement 运算符，全都返回右值，所以可以将右值引用或const左值引用与任一绑定。
+
+因为右值引用只能绑定temporary obj，所以：
+被绑定的obj即将销毁
+被绑定的obj没有user使用
+所以可以自由地接管被绑定的obj中的资源
+
+变量（非临时）都是左值。
+
+Reference Collapsing and 左值引用参数
+有：template void f3(T&&);
+tip：当一个函数的参数是reference，例如func(int &),则实参传递给函数时实质发生了reference与实参绑定。
+假设i是一个int型obj，我们会觉得f3(i)是非法的，因为i是左值，而常规来说是不能将右值引用与左值绑定的。但是，有两条额外规定附加于常规中：
+1.当传递了实参为左值（e.g.,i）给函数形参为template type param的右值引用（e.g.,T&&），编译器会把template type param推算为实参的左值引用类型，所以，当调用f3(i)，编译器会推算T的类型为int&。这样，f3函数的参数变成f3(int& &&)即对int&的右值引用，常规来说是不能直接定义对引用的引用的，但可以间接地通过type alias或template type param实现。
+2.若间接地实现了对引用的引用，则这些引用将“collapse“：引用将collapse to形成一个常规的左值引用，或当且仅当情况为对右值的右值引用时，引用将collapse to形成一个右值引用。归纳起来就是：对于一个给定的类型 X：
+I. X& &, X& &&, 和 X&& & 都会collapse to形成 X&
+II. X&& && 会collapse to形成 X&&
+
+综上，所以我们可以传任意类型的实参给形参为T&&的模板函数，因为这样的形参明显可以接受右值，又如上述所说，也可以接受左值。
+
+75. std::move(arg)
+返回一个arg的右值引用。
+调用std::move就是告诉编译器有一个左值我们想要把它当成右值使用，本质就是向编译器保证：除了重新向该左值（var）赋值或销毁它，不会再去使用它。否则在调用std::move后，若直接访问该左值会产生不确定的数值。
+
+76. write data of json format
+
+QJsonDocument doc = QJsonDocument::fromVariant(serializable.toVariant());
+QFile file(filepath);
+file.open(QFile::WriteOnly);
+file.write(doc.toJson(QJSonDocument::Indented)); // or QJSonDocument::Compact
+file.close();
+
+77. read data of json format
+
+QFile file(filepath);
+file.open(QFile::ReadOnly);
+QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+file.close();
+serializable.fromVariant(doc.toVariant()); // QJsonDocument could convert to QVariant
+
+78. write data of XML format
+
+QFile file(filepath);
+file.open(QFile::WriteOnly);
+QXmlStreamWriter stream(&file);
+stream.setAutoFormatting(true);
+stream.writeStartDocument();
+writeVariantToStream(rootName, serializable.toVariant(),stream);
+stream.writeEndDocument();
+file.close();
+
+As already explained, writing a QVariant to an XML stream depends on how you want to represent the data. So we have to write the conversion function 'writeVariantToStream()'.
+
+void XmlSerializer::writeVariantToStream(const QString& nodeName,
+    const QVariant& variant, QXmlStreamWriter& stream)
+{
+    stream.writeStartElement(nodeName);
+    stream.writeAttribute("type", variant.typeName());
+
+    switch (variant.type()) {
+        case QMetaType::QVariantList:
+            writeVariantListToStream(variant, stream);
+            break;
+        case QMetaType::QVariantMap:
+            writeVariantMapToStream(variant, stream);
+            break;
+        default:
+            writeVariantValueToStream(variant, stream);
+            break;
+    }
+
+    stream.writeEndElement();
+}
+
+Here are the steps of this function:
+1.Start a new XML element with the writeStartElement() function. The nodeName will be used to create the XML tag. For example, <soundId.
+2.Write an XML attribute called type in the current element. We use the name of the type stored in the QVariant. For example, <soundId type="int".
+3.Depending on the QVariant data type, we call one of our XML serialization functions. For example, <soundId type="int">2.
+4.Finally, we end the current XML element with writeEndElement():
+The final result is: <soundId type="int">2</soundId>
+
+void XmlSerializer::writeVariantValueToStream(
+    const QVariant& variant, QXmlStreamWriter& stream)
+{
+    stream.writeCharacters(variant.toString());
+}
+
+void XmlSerializer::writeVariantListToStream(
+    const QVariant& variant, QXmlStreamWriter& stream)
+{
+    QVariantList list = variant.toList();
+
+    for(const QVariant& element : list) {
+        writeVariantToStream("item", element, stream);
+    }
+}
+
+void XmlSerializer::writeVariantMapToStream(
+    const QVariant& variant, QXmlStreamWriter& stream)
+{
+    QVariantMap map = variant.toMap();
+    QMapIterator<QString, QVariant> i(map);
+
+    while (i.hasNext()) {
+        i.next();
+        writeVariantToStream(i.key(), i.value(), stream);
+    }
+}
+
+all complex type QVariant would be recursively divide finally into simple type QVariant, then we retrieve its QString representation. Then we use QXmlStreamWriter::writeCharacters() to write this QString in the XML stream.
+
+79. read data of XML format
+void XmlSerializer::load(Serializable& serializable,
+    const QString& filepath)
+{
+    QFile file(filepath);
+    file.open(QFile::ReadOnly);
+    QXmlStreamReader stream(&file);
+    stream.readNextStartElement();
+    serializable.fromVariant(readVariantFromStream(stream));
+}
+
+[static] QVariant::Type QVariant::nameToType(const char *name)
+Converts the string representation of the storage type given in name, to its enum representation.
+If the string representation cannot be converted to any enum representation, the variant is set to Invalid.
+
+QVariant XmlSerializer::readVariantFromStream(QXmlStreamReader& stream)
+{
+    QXmlStreamAttributes attributes = stream.attributes();
+    QString typeString = attributes.value("type").toString();
+
+    QVariant variant;
+    switch (QVariant::nameToType(
+            typeString.toStdString().c_str())) {
+        case QMetaType::QVariantList:
+            variant = readVariantListFromStream(stream);
+            break;
+        case QMetaType::QVariantMap:
+            variant = readVariantMapFromStream(stream);
+            break;
+        default:
+            variant = readVariantValueFromStream(stream);
+         break;
+ }
+
+ return variant;
+}
+
+QVariant XmlSerializer::readVariantValueFromStream(
+    QXmlStreamReader& stream)
+{
+    QXmlStreamAttributes attributes = stream.attributes();
+    QString typeString = attributes.value("type").toString();
+    QString dataString = stream.readElementText();
+
+    QVariant variant(dataString);
+    variant.convert(QVariant::nameToType(
+        typeString.toStdString().c_str()));
+    return variant;
+}
+
+QVariant XmlSerializer::readVariantListFromStream(QXmlStreamReader& stream)
+{
+    QVariantList list;
+    while(stream.readNextStartElement()) {
+        list.append(readVariantFromStream(stream));
+    }
+    return list;
+}
+
+QVariant XmlSerializer::readVariantMapFromStream(
+    QXmlStreamReader& stream)
+{
+    QVariantMap map;
+    while(stream.readNextStartElement()) {
+        map.insert(stream.name().toString(),
+                   readVariantFromStream(stream));
+    }
+    return map;
+}
+
+80. write data of binary format
+void BinarySerializer::save(const Serializable& serializable,
+    const QString& filepath, const QString& /*rootName*/)
+{
+    QFile file(filepath);
+    file.open(QFile::WriteOnly);
+    QDataStream dataStream(&file);
+    dataStream << serializable.toVariant();
+    file.close();
+}
+
+81. read data of binary format
+void BinarySerializer::load(Serializable& serializable, const QString& filepath)
+{
+    QFile file(filepath);
+    file.open(QFile::ReadOnly);
+    QDataStream dataStream(&file);
+    QVariant variant;
+    dataStream >> variant;
+    serializable.fromVariant(variant);
+    file.close();
+}
+
+82. inter-process-communication
+1) tcp server and tcp socket
+
+2) QSharedMemory
+{
+QString sharedMessage("Hello");
+QByteArray sharedData = sharedMessage.toLatin1();
+
+QSharedMemory* sharedMemory = new QSharedMemory(
+    "sharedMemoryKey", this);
+sharedMemory->create(sharedMessage.size());
+
+sharedMemory->lock();
+
+memcpy(sharedMemory->data(),
+       sharedData.data(),
+       sharedData.size());
+sharedMemory->unlock();
+}
+
+{
+QSharedMemory* sharedMemory = new QSharedMemory(
+    "sharedMemoryKey", this);
+sharedMemory->attach();
+
+sharedMemory->lock();
+
+QByteArray sharedData(sharedMemory->size(), '\0');
+
+memcpy(sharedData.data(),
+       sharedMemory->data(),
+       sharedMemory->size());
+sharedMemory->unlock();
+
+QString sharedMessage = QString::fromLatin1(sharedData);
+qDebug() << sharedMessage;
+
+sharedMemory->detach();
+}
+
+3) QProcess
+{
+QProcess::startDetached(QString("explorer ").append(cur_result_dir.replace("/","\\")));
+}
+
+{
+QProcess p(0);
+p.setWorkingDirectory("C:/WINDOWS/system32");
+qDebug() << "begin run py in extra thread..";
+qDebug() << "running py in thread : " << QThread::currentThreadId();
+p.start("cmd.exe");
+p.waitForStarted();
+p.write(QString("cd ").append(QString(py_path)).toStdString().data());
+p.write("\n\r");
+p.write("python.exe dat_to_nc.py");
+p.write("\n\r");
+p.closeWriteChannel();
+p.waitForFinished();
+qDebug() << QString::fromLocal8Bit(p.readAllStandardOutput());
+qDebug() << "py run done!";
+}
+
+4) Qt D-Bus
+It can be seen as a unified protocol for IPC and RPC (remote procedure calling). Many forms of communication are possible, such as:
+One-to-one
+One-to-many
+Many-to-many
+The best thing about Qt D-Bus is that you can even use the signal/slot mechanism across the bus. A signal emitted from one application can be connected to a slot from another application. Linux desktop environments like KDE and GNOME use the D-Bus. That implies that you can (also) control your desktop with D-Bus.
+
+Here are the main concepts of D-Bus:
+Bus: This is used in many-to-many communication. D-Bus defines two buses: the system bus and the session bus.
+Service name: This is the identifier of a service on a bus.
+Message: This is a message sent by one application. If a bus is used, the message contains the destination.
+
+{
+class HelloService : public QObject
+{
+    Q_OBJECT
+
+public slots:
+    QString sayHello(const QString &name);
+};
+
+QString HelloService::sayHello(const QString& name)
+{
+    qDebug().noquote() << name << " is here!";
+    return QString("Hello %1!").arg(name);;
+}
+}
+
+QDebug &QDebug::noquote()
+Disables automatic insertion of quotation characters around QChar, QString and QByteArray contents and returns a reference to the stream.
+When quoting is disabled, these types are printed without quotation characters and without escaping of non-printable characters.
+
+service app
+{
+HelloService helloService;
+QString serviceName("org.masteringqt.QtDBus.HelloService");
+
+QDBusConnection::sessionBus().registerService(serviceName);
+QDBusConnection::sessionBus().registerObject("/",
+    &helloService, QDBusConnection::ExportAllSlots);
+}
+
+client cpp
+{
+QString serviceName("org.masteringqt.QtDBus.HelloService");
+QDBusInterface serviceInterface(serviceName, "/");
+QDBusReply<QString> response = serviceInterface.call(
+    "sayHello", "Lenna");
+qDebug().noquote() << response;
+}
+
+83. Qt Plugin
+Making an application extensible through plugins involves the following steps:
+1.Define a set of interfaces (classes with only pure virtual functions) used to talk to the plugins.
+2.Use the Q_DECLARE_INTERFACE() macro to tell Qt's meta-object system about the interface.
+3.Use QPluginLoader in the application to load the plugins.
+4.Use qobject_cast() to test whether a plugin implements a given interface.
+
+Writing a plugin involves these steps:
+1.Declare a plugin class that inherits from QObject and from the interfaces that the plugin wants to provide.
+2.Use the Q_INTERFACES() macro to tell Qt's meta-object system about the interfaces.
+3.Export the plugin using the Q_PLUGIN_METADATA() macro.
+4.Build the plugin using a suitable .pro file.
+
+{
+For example, here's the definition of an interface class:
+
+  class FilterInterface
+  {
+  public:
+      virtual ~FilterInterface() {}
+
+      virtual QStringList filters() const = 0;
+      virtual QImage filterImage(const QString &filter, const QImage &image,
+                                 QWidget *parent) = 0;
+  };
+
+#define FilterInterface_iid  "org.qt-project.Qt.Examples.FilterInterface/1.0"
+Q_DECLARE_INTERFACE(ShapeInterface, ShapeInterface_iid)
+
+Here's the definition of a plugin class that implements that interface:
+
+  #include <QObject>
+  #include <QtPlugin>
+  #include <QStringList>
+  #include <QImage>
+
+  #include <plugandpaint/interfaces.h>
+
+  class ExtraFiltersPlugin : public QObject, public FilterInterface //inherits from QObject, and need any other Qxxx class just inherits is ok
+  {
+      Q_OBJECT
+      Q_PLUGIN_METADATA(IID "org.qt-project.Qt.Examples.PlugAndPaint.FilterInterface" FILE "extrafilters.json")
+      Q_INTERFACES(FilterInterface)
+
+  public:
+      QStringList filters() const;
+      QImage filterImage(const QString &filter, const QImage &image,
+                         QWidget *parent);
+  };
+
+void MainWindow::loadPlugins()
+  {
+      const auto staticInstances = QPluginLoader::staticInstances();
+      for (QObject *plugin : staticInstances)
+          populateMenus(plugin);
+
+        pluginsDir = QDir(qApp->applicationDirPath());
+
+        #if defined(Q_OS_WIN)
+        if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
+            pluginsDir.cdUp();
+        #elif defined(Q_OS_MAC)
+        if (pluginsDir.dirName() == "MacOS") {
+            pluginsDir.cdUp();
+            pluginsDir.cdUp();
+            pluginsDir.cdUp();
+}
+#endif
+pluginsDir.cd("plugins");
+
+
+const auto entryList = pluginsDir.entryList(QDir::Files);
+for (const QString &fileName : entryList) {
+    QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
+    QObject *plugin = loader.instance();
+    if (plugin) {
+        populateMenus(plugin);
+        pluginFileNames += fileName;
+    }
+}
+
+We use QDir::entryList() to get a list of all files in that directory. Then we iterate over the result using foreach and try to load the plugin using QPluginLoader.
+The QObject provided by the plugin is accessible through QPluginLoader::instance(). If the dynamic library isn't a Qt plugin, or if it was compiled against an incompatible version of the Qt library, QPluginLoader::instance() returns a null pointer.
+If QPluginLoader::instance() is non-null, we add it to the menus.
+
+auto iBrush = qobject_cast<BrushInterface *>(plugin);
+if (iBrush){..}
+
+For each plugin (static or dynamic), we check which interfaces it implements using qobject_cast(). First, we try to cast the plugin instance to a BrushInterface; if it works..
+
+}
+
+Q_DECLARE_INTERFACE(ClassName, Identifier)
+This macro associates the given Identifier (a string literal) to the interface class called ClassName. The Identifier must be unique.
+
+Q_INTERFACES( ...)
+This macro tells Qt which interfaces the class implements. This is used when implementing plugins.
+Example:
+
+  class BasicToolsPlugin : public QObject,
+                           public BrushInterface,
+                           public ShapeInterface,
+                           public FilterInterface
+  {
+      Q_OBJECT
+      Q_PLUGIN_METADATA(IID "org.qt-project.Qt.Examples.PlugAndPaint.BrushInterface" FILE "basictools.json")
+      Q_INTERFACES(BrushInterface ShapeInterface FilterInterface)
+
+  public:
+      ...
+  };
+
+Q_PLUGIN_METADATA( ...)
+This macro is being used to declare meta data that is part of a plugin that instantiates this object.
+The macro needs to declare the IID of the interface implemented through the object, and reference a file containing the meta data for the plugin.
+There should be exactly one occurrence of this macro in the source code for a Qt plugin.
+Example:
+
+  class MyInstance : public QObject
+  {
+      Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QDummyPlugin" FILE "mymetadata.json")
+  };
+
+[static] QObjectList QPluginLoader::staticInstances()
+Returns a list of static plugin instances (root components) held by the plugin loader.
+
+qApp
+A global pointer referring to the unique application object. It is equivalent to QCoreApplication::instance(), but cast as a QApplication pointer, so only valid when the unique application object is a QApplication.
+
+so the qApp is actually the ptr to the current qt program we are coding.
+
+The QPluginLoader class loads a plugin at run-time.
+
+QObject *QPluginLoader::instance()
+Returns the root component object of the plugin. The plugin is loaded if necessary. The function returns 0 if the plugin could not be loaded or if the root component object could not be instantiated.
+If the root component object was destroyed, calling this function creates a new instance.
+The root component, returned by this function, is not deleted when the QPluginLoader is destroyed. If you want to ensure that the root component is deleted, you should call unload() as soon you don't need to access the core component anymore. When the library is finally unloaded, the root component will automatically be deleted.
+The component object is a QObject.
+
+
+Q_IMPORT_PLUGIN(PluginName)
+This macro imports the plugin named PluginName, which corresponds with the name of the class that declares metadata for the plugin with Q_PLUGIN_METADATA().
+Inserting this macro into your application's source code will allow you to make use of a static plugin.
+Example:
+
+  Q_IMPORT_PLUGIN(qjpeg)
+
+Static plugins must also be included by the linker when your application is built. For Qt's predefined plugins, you can use the QTPLUGIN to add the required plugins to your build. For example:
+
+  TEMPLATE      = app
+  QTPLUGIN     += qjpeg qgif    # image formats
+
+84. QJsonArray
+{
+QJsonObject obj;
+QJsonObject obj_tmp;
+QJsonArray jsonArr = QJsonArray();
+QStringList list;
+for (unsigned int i = 0; i < root["data"].size(); i++)
+{
+        obj_tmp.insert("first", QString::fromStdString(root["data"][i]["first"].asString()));
+        obj_tmp.insert("second", QString::fromStdString(root["data"][i]["second"].asString()));
+        obj_tmp.insert("third", QString::fromStdString(root["data"][i]["third"].asString()));
+        obj_tmp.insert("fourth", QString::fromStdString(root["data"][i]["fourth"].asString()));
+        obj_tmp.insert("fifth", QString::fromStdString(root["data"][i]["fifth"].asString()));
+        obj_tmp.insert("sixth", QString::fromStdString(root["data"][i]["sixth"].asString()));
+        obj_tmp.insert("seventh", QString::fromStdString(root["data"][i]["seventh"].asString()));
+        jsonArr.append(obj_tmp);
+}
+qDebug() << "arr got" << jsonArr.size();
+obj.insert("data", jsonArr);
+}
+
+85. specify file's encoding
+{
+QFile file_("jtj_jsonRep.json");
+if(!file_.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    qDebug() << "json file could not create!";
+QTextStream out(&file_);
+out.setCodec("UTF-8");
+out << QJsonDocument(obj_compressed).toJson(QJsonDocument::Compact);
+file_.close();
+}
+
+86. get val from a json obj
+QJsonObject obj;
+obj.value("all").toInt();
+
+87. where to emit signal
+once a connection of signal&slot formed, then no matter when and where, as long as you can emit the signal, the corresponding slot would be execute!
+
+88. make a connection of signal&slot between two remote objs
+this two remote objs mean they have neither directly inherits relationship nor both inherit from another class, and the key to make the connection work is: accquire the obj instance's ptr of sender's and receiver's, so we use C++'s inherit and Qt's signal&slot to transit ptr of actual sender's and receiver's, and we could only use this fashion of connect(): connect(sender,SIGNAL(),receiver,SLOT()), and by this method, we should save the ptr transited from remote as type of QObject*.
+
+89. QTcpSocket's error check
+
+QString QIODevice::errorString() const
+Returns a human-readable description of the last device error that occurred.
+
+QTcpSocket::errorString();
+
+90. how to make a class be able to use signal&slot
+the class must inherit from QObject and declare Q_OBJECT in the head of class declaration.
+
+91. QStringLiteral(str)
+The macro generates the data for a QString out of the string literal str at compile time. Creating a QString from it is free in this case, and the generated string data is stored in the read-only segment of the compiled object file.
+使用 QStringLiteral 宏可以在编译期把代码里的常量字符串 str 直接构造为 QString 对象，于是运行时就不再需要额外的构造开销了。
+
+92. get each elem in a list
+foreach(QString fileName, pluginsDir.entryList(dllFilter, QDir::Files))
+
+QStringList QDir::entryList(const QStringList &nameFilters, QDir::Filters filters = NoFilter, QDir::SortFlags sort = NoSort) const
+Returns a list of the names of all the files and directories in the directory, ordered according to the name and attribute filters previously set with setNameFilters() and setFilter(), and sorted according to the flags set with setSorting().
+The name filter, file attribute filter, and sorting specification can be overridden using the nameFilters, filters, and sort arguments.
+Returns an empty list if the directory is unreadable, does not exist, or if nothing matches the specification.
+
+93. T qobject_cast(QObject *object)
+Returns the given object cast to type T if the object is of type T (or of a subclass); otherwise returns 0. If object is 0 then it will also return 0.
+The class T must inherit (directly or indirectly) QObject and be declared with the Q_OBJECT macro.
+
+94. deploy a Qt prj
+run the Qt prj at Release edition, then copy the corresponding xxx.exe to another folder, then run Qt command box, "cd" to
+the folder that created just now, then run "windeployqt xxx.exe".
+
+95. QRunnable could set to not auto delete
+void QRunnable::setAutoDelete(bool autoDelete)
+
+96. possible causes of signal already emit, but slot not responding
+if a signal been emit, and the slot's owner obj been already deleted, then the slot would not execute.
+
+97. Forward declaration
+在编写C++程序的时候，偶尔需要用到前置声明(Forward declaration)。下面的程序中，带注释的那行就是类B的前置说明。这是必须的，因为类A中用到了类B，而类B的声明出现在类A的后面。如果没有类B的前置说明，下面的程序将不同通过编译，编译器将会给出类似“缺少类型说明符”这样的出错提示。
+
+98. generate dll and lib by Qt
+创建一个QT的库项目,删除自动生成的.h和.cpp文件,添加一个接口定义.h文件和一个接口实现类(一个.h一个.cpp).
+
+99. how to debug dll
+set the Qt lib prj to construct in the specifed folder that main program would load the dll.
+
+100. QPluginLoader would load the Qt plugin and could use QPluginLoader::instance() to instantiate
+
+101. signal&slot could not be inherit
+when a signal&slot connection defined, the signal and slot are bound to the specify class, even inherit class have same signal and slot would not be the connection's responding signal and slot.
+
+we could use parent class' slot to call child class' overridde function
+
+102. the most last override virtual function
+if there exist inherits, then the most last override function would be the actual one to execute
+
+103. what a Qt plugin consist:
+  class ExtraFiltersPlugin : public QObject, public FilterInterface //inherits from QObject, and need any other Qxxx class just inherits is ok
+  {
+      Q_OBJECT
+      Q_PLUGIN_METADATA(IID "org.qt-project.Qt.Examples.PlugAndPaint.FilterInterface" FILE "extrafilters.json")
+      Q_INTERFACES(FilterInterface)
+      // only contain above three statements that could form a Qt plugin.
+      ...
+  }
+
+104. same class
+when inherit, wanna using the overridde function, must have the same parent class
+two same class must contain exactly totally same contents, otherwise they are different classes.
+
+105. std::shared_ptr
+std::shared_ptr<classType> obj;
+std::shared_ptr::reset(new classType)
+std::shared_ptr::make_shared<classType>(args);
+
+106. the use of 'typedef', 'extern', '
+typedef std::map<QString, ModelBase*> model_map;
+typedef std::shared_ptr<model_map> model_ptr;
+typedef std::map<QString, mainBase*> main_map;
+typedef std::shared_ptr<main_map> main_ptr;
+
+extern model_ptr model_list;
+extern main_ptr main_list;
+
+extern声明不是定义，也不分配存储空间。事实上，它只是说明变量定义在程序的其他地方。程序中变量可以声明多次，但只能定义一次。
+只有当声明也是定义时，声明才可以有初始化式，因为只有定义才分配存储空间。
+初始化式必须要有存储空间来进行初始化。如果声明有初始化式，那么它可被当作是定义。只有当extern声明位于函数外部时，才可以含有初始化式。
+任何在多个文件中使用的变量都需要有与定义分离的声明，一个文件含有变量的定义，使用该变量的其他文件则包含该变量的声明（而不是定义）。
+
+model_list.reset(new model_map);
+main_list.reset(new main_map);
+just like 'new int'
+
+107. open a specified url on web browser
+
+QString programAddress = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe";
+QStringList arguments;
+arguments << "--chrome-frame" << "-kiosk" << "http://www.baidu.com";
+QProcess *chromeProcess = new QProcess();
+chromeProcess->start(programAddress, arguments);
+
+108. use QSettings to read ini file
+QSettings setting("/home/qust/qt/setting/config.ini",QSettings::IniFormat);//读配置文件
+setting.beginGroup("config");
+QString STR=setting.value("page").toString();
+
+109. to get a file's absolute path by user select
+QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
+                                                 "/home",
+                                                 tr("Images (*.png *.xpm *.jpg)"));
+
+110. to get a folder's absolute path by user select
+QString QFileDialog::getExistingDirectory(QWidget *parent, const QString &caption, const QString &dir, QFileDialog::Options options)
+This is a convenience static function that will return an existing directory selected by the user.
+
+  QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+                                                  "/home",
+                                                  QFileDialog::ShowDirsOnly
+                                                  | QFileDialog::DontResolveSymlinks);
+
+111. inhert parent class and override function
+the construct function should also be override if it's not default constructor, or it may could not use parent class's ptr to call child's override function.
+
+112. turn number to bytes
+QByteArray tmp;
+tmp.resize(sizeof(int));
+memcpy(tmp.data(), ptr, sizeof(*ptr));
+byteArr.append(tmp);
+
+113. QEvent
+The QEvent class is the base class of all event classes. Event objects contain event parameters.
+Qt's main event loop (QCoreApplication::exec()) fetches native window system events from the event queue, translates them into QEvents, and sends the translated events to QObjects.
+In general, events come from the underlying window system (spontaneous() returns true), but it is also possible to manually send events using QCoreApplication::sendEvent() and QCoreApplication::postEvent() (spontaneous() returns false).
+QObjects receive events by having their QObject::event() function called. The function can be reimplemented in subclasses to customize event handling and add additional event types; QWidget::event() is a notable example. By default, events are dispatched to event handlers like QObject::timerEvent() and QWidget::mouseMoveEvent(). QObject::installEventFilter() allows an object to intercept events destined for another object.
+The basic QEvent contains only an event type parameter and an "accept" flag. The accept flag set with accept(), and cleared with ignore(). It is set by default, but don't rely on this as subclasses may choose to clear it in their constructor.
+Subclasses of QEvent contain additional parameters that describe the particular event.
+
+114. Unexpected CDB Exit"  "The CDB process terminated.
+有时候，我们使用QT开发，在使用Debug模式进行调试，会出现 "Unexpected CDB Exit"  "The CDB process terminated."的错误
+这个问题，感到莫名其妙，我们尝试重新qmake， 重新构建， 删除所有缓存等等，但都不起什么作用。
+通过查询资料，我们知道，原来可能是因为缺失依赖库 xxx.dll
+
+那么我们怎么确定到底缺失了那个dll呢？ 我们需要到bin目录下（也就是生成可执行程序目录下），双击打开生成的xxx.exe,然后就会显示出来缺失那个dll，将相应的dll库拷贝到生成的可执行目录下就可以了。
+
+115. bitwise 'and' 'or' 'xor'
+XOR是异或运算，A XOR B的结果：当A、B两个不同时结果为1，否则为0.
+
+116. template relative
+StringSinkTemplate(const StringSinkTemplate<std::string> &);
+means need to pass a std::string arg
+
+117. 设置编码
+QTextStream out(&file);
+out.setCodec("UTF-8");
+
+118.
