@@ -15,11 +15,11 @@ $ find . -name '*.gif' -print | xargs file
 In the example above, xargs runs the file command. However, this invocation can cause errors or leave your system open to security problems, because filenames can include spaces and newlines. When writing a script, use the following form instead, which changes the find output separator and the xargs argument delimiter from a newline to a NULL character: 
 $ find . -name '*.gif' -print0 | xargs -0 file
 
-xargs starts a lot of processes, so don��t expect great performance if you have a large list of files.  
+xargs starts a lot of processes, so don’t expect great performance if you have a large list of files.  
 
 You may need to add two dashes (--) to the end of your xargs command if there is a chance that any of the target files start with a single dash (-). The double dash (--) can be used to tell a program that any arguments that follow the double dash are filenames, not options. However, keep in mind that not all programs support the use of a double dash. 
 
-There��s an alternative to xargs when using find: the -exec option. However, the syntax is somewhat tricky because you need to supply a {} to substitute the filename and a literal ; to indicate the end of the command. Here��s how to perform the preceding task using only find: 
+There’s an alternative to xargs when using find: the -exec option. However, the syntax is somewhat tricky because you need to supply a {} to substitute the filename and a literal ; to indicate the end of the command. Here’s how to perform the preceding task using only find: 
 $ find . -name '*.gif' -exec file {} \; 
 
 4. pgrep
@@ -27,7 +27,7 @@ pgrep looks through  the  currently  running  processes and lists  the process I
 $ pgrep svr02
 
 5. kill
-When you run kill, you��re asking the kernel to send a signal to another process.
+When you run kill, you’re asking the kernel to send a signal to another process.
 if kill not specify which signal to be sent, then would send TERM signal by default.
 -s signal
 send specify signal to process, the signal could be represented by number or signal name. signal 9 equal to SIGKILL, force to kill process.
@@ -37,13 +37,13 @@ $ kill -s 9 pid
 $ free -m
 show RAM's usage in Unit of MByte.
 
-����Buffers��Cached���������� http://www.taobaotesting.com/blogs/qa?bid=2265 ��һ�ν������£�
+关于Buffers和Cached的区别，来自 http://www.taobaotesting.com/blogs/qa?bid=2265 的一段解释如下：
 
-buffers��ָ���������豸���Ļ����С����ֻ��¼�ļ�ϵͳ��metadata�Լ� tracking in-flight pages.
+buffers是指用来给块设备做的缓冲大小，他只记录文件系统的metadata以及 tracking in-flight pages.
 
-cached���������ļ������塣
+cached是用来给文件做缓冲。
 
-�Ǿ���˵��buffers�������洢��Ŀ¼������ʲô���ݣ�Ȩ�޵ȵȡ���cachedֱ�������������Ǵ򿪵��ļ�
+那就是说：buffers是用来存储，目录里面有什么内容，权限等等。而cached直接用来记忆我们打开的文件
 
 7. du
 $ du -m filename
@@ -56,32 +56,32 @@ $ ps -ef
 To see every process on the system using BSD syntax:
 $ ps axu
 
-�鿴���̣�
-1) ps �������ڲ鿴��ǰ�������еĽ��̡�
-grep ������
-���磺 ps -ef | grep java
-��ʾ�鿴���н����� CMD �� java �Ľ�����Ϣ
+查看进程：
+1) ps 命令用于查看当前正在运行的进程。
+grep 是搜索
+例如： ps -ef | grep java
+表示查看所有进程里 CMD 是 java 的进程信息
 2) ps -aux | grep java
--aux ��ʾ����״̬
+-aux 显示所有状态
 ps
-3) kill ����������ֹ����
-���磺 kill -9 [PID]
--9 ��ʾǿ�Ƚ�������ֹͣ
-ͨ���� ps �鿴���� PID ���� kill ������ֹ����
+3) kill 命令用于终止进程
+例如： kill -9 [PID]
+-9 表示强迫进程立即停止
+通常用 ps 查看进程 PID ，用 kill 命令终止进程
 
 $ ps -eo
 
 9. strings
-��ʾ�ļ��еĿɴ�ӡ�ַ�
+显示文件中的可打印字符
 $ strings /usr/lib64/libstdc++.so.6 | grep 'CXXABI'
 
 10. ln
-���ļ�֮�佨������
+在文件之间建立连接
 $ ln -s libstdc++.so.6.0.19 libstdc++.so.6
 above command create a soft link.
 
-11. linux ���ӿ���������
-��д�õĽű���.sh�ļ����ŵ�Ŀ¼ /etc/profile.d/ �£�ϵͳ������ͻ��Զ�ִ�и�Ŀ¼�µ�����shell�ű���
+11. linux 添加开机启动项
+将写好的脚本（.sh文件）放到目录 /etc/profile.d/ 下，系统启动后就会自动执行该目录下的所有shell脚本。
 
 12. pgrep
 looks through the currently running processes and lists the process IDs which match the selection criteia to stdout.
@@ -170,6 +170,7 @@ yum -y install mesa-libGL-devel
 
 16. accquire execute permission
 chmod +x filename
+chmod 777 filename
 
 17. setting environment variable
 append the /etc/profile with:
@@ -182,64 +183,64 @@ source /etc/profile
 
 20. firewall relative cmds
 $ systemctl status firewalld
-�鿴����ǽ״̬
+查看防火墙状态
 
-��������ǽ
+开启防火墙
 systemctl start firewalld
 
-�رշ���ǽ
+关闭防火墙
 systemctl stop firewalld
 
-�鿴��ǰfirewall״̬
+查看当前firewall状态
 firewall-cmd --state
 
-����firewall
+重启firewall
 firewall-cmd --reload
 
-��ֹ��������
+禁止开机启动
 systemctl disable firewalld.service
 
-�����˿�
-�鿴�Ѿ����ŵĶ˿ڣ�
+开启端口
+查看已经开放的端口：
 firewall-cmd --list-ports
 
-�����˿�
+开启端口
 firewall-cmd --zone=public --add-port=80/tcp --permanent
 
-21. linux�鿴�����ڴ�ռ��
+21. linux查看进程内存占用
 ps -aux | grep xxx
 
 22. decompress
 tar -xvf filename
 
--j����bz2���Ե�
+-j：有bz2属性的
 
 23. error while loading shared libraries: libtest.so: cannot open shared object file: No such file or directory
-1) ����������ļ���װ����/lib��/usr/libĿ¼��, ��ô��ִ��һ��ldconfig����
+1) 如果共享库文件安装到了/lib或/usr/lib目录下, 那么需执行一下ldconfig命令
 
-ldconfig�������;, ��Ҫ����Ĭ����ѰĿ¼(/lib��/usr/lib)�Լ���̬�������ļ�/etc/ld.so.conf�����е�Ŀ¼��, �������ɹ����Ķ�̬���ӿ�(��ʽ��lib*.so*), ������������̬װ�����(ld.so)��������Ӻͻ����ļ�. �����ļ�Ĭ��Ϊ/etc/ld.so.cache, ���ļ��������ź���Ķ�̬���ӿ������б�.
+ldconfig命令的用途, 主要是在默认搜寻目录(/lib和/usr/lib)以及动态库配置文件/etc/ld.so.conf内所列的目录下, 搜索出可共享的动态链接库(格式如lib*.so*), 进而创建出动态装入程序(ld.so)所需的连接和缓存文件. 缓存文件默认为/etc/ld.so.cache, 此文件保存已排好序的动态链接库名字列表.
 
-2) ����������ļ���װ����/usr/local/lib(�ܶ࿪Դ�Ĺ����ⶼ�ᰲװ����Ŀ¼��)������"��/lib��/usr/lib"Ŀ¼��, ��ô��ִ��ldconfig����ǰ, ��Ҫ���¹�����Ŀ¼���뵽�����������ļ�/etc/ld.so.conf��, ����:
+2) 如果共享库文件安装到了/usr/local/lib(很多开源的共享库都会安装到该目录下)或其它"非/lib或/usr/lib"目录下, 那么在执行ldconfig命令前, 还要把新共享库目录加入到共享库配置文件/etc/ld.so.conf中, 如下:
 
 # cat /etc/ld.so.conf
 include ld.so.conf.d/*.conf
 # echo "/usr/local/lib" >> /etc/ld.so.conf
 # ldconfig
 
-3) ����������ļ���װ��������"��/lib��/usr/lib" Ŀ¼��,  �����ֲ�����/etc/ld.so.conf�м�·��(������û��Ȩ�޼�·��). �ǿ���exportһ��ȫ�ֱ���LD_LIBRARY_PATH, Ȼ�����г����ʱ��ͻ�ȥ���Ŀ¼���ҹ�����.
+3) 如果共享库文件安装到了其它"非/lib或/usr/lib" 目录下,  但是又不想在/etc/ld.so.conf中加路径(或者是没有权限加路径). 那可以export一个全局变量LD_LIBRARY_PATH, 然后运行程序的时候就会去这个目录中找共享库.
 
-LD_LIBRARY_PATH����˼�Ǹ���loader����ЩĿ¼�п����ҵ�������. �������ö������Ŀ¼, ��ЩĿ¼֮����ð�ŷָ���. ���簲װ��һ��mysql��/usr/local/mysqlĿ¼��, ������һ��ѿ��ļ���/usr/local/mysql/lib����, �������.bashrc��.bash_profile��shell�����������伴��:
+LD_LIBRARY_PATH的意思是告诉loader在哪些目录中可以找到共享库. 可以设置多个搜索目录, 这些目录之间用冒号分隔开. 比如安装了一个mysql到/usr/local/mysql目录下, 其中有一大堆库文件在/usr/local/mysql/lib下面, 则可以在.bashrc或.bash_profile或shell里加入以下语句即可:
 
 export LD_LIBRARY_PATH=/usr/local/mysql/lib:$LD_LIBRARY_PATH
 
-һ��������ֻ��һ����ʱ�Ľ������, ��û��Ȩ�޻���ʱ��Ҫ��ʱ��ʹ��.
+一般来讲这只是一种临时的解决方案, 在没有权限或临时需要的时候使用.
 
 24. host
 host -t A www.baidu.com
 
 25. tcpdump
-����ץ��
-tcpdump������ֽ����У�ÿ2���ַ�����1�ֽڣ�ÿ4���ַ������2�ֽڣ�
+用于抓包
+tcpdump输出的字节码中，每2个字符等于1字节，每4个字符组代表2字节：
 0x0000: 4510 003c a5da 4000 4006 96cf 7f00 0001
 
 26. route
@@ -248,41 +249,41 @@ $ route del -net 192.168.1.0 netmask(?) 255.255.255.0
 $ route del default
 $ route add default gw(?) 192.168.1.109 dev(?) eth0(?)
 
-$ route -Cn �鿴·�ɱ�������
+$ route -Cn 查看路由表缓：冲
 
 27. iptable
-���ڹ������ݰ������������������н��յ�����������
+用于过滤数据包，可以用来丢弃所有接收到的连接请求
 
 28. netstat
-��һ�����ܺ�ǿ���������Ϣͳ�ƹ��ߣ������Դ�ӡ���������ӿ��ϵ�ȫ�����ӣ�·�ɱ���Ϣ�������ӿ���Ϣ�ȣ�������Ҫ������ʾTCP���Ӽ���״̬��Ϣ�Ĺ���
+是一个功能很强大的网络信息统计工具，它可以打印本地网卡接口上的全部连接，路由表信息，网卡接口信息等，我们主要利用显示TCP连接及其状态信息的功能
 
 29. nc
-���ڴ�����������
+用于创建网络连接
 
 30. iperf
-��һ����������״���Ĺ��ߣ�-sѡ���ʾ������Ϊ���������С�iperfĬ�ϼ���5001�˿ڣ��������˿��Ͻ��յ����������ݣ��൱��һ��discard��������
+是一个测量网络状况的工具，-s选项表示将其作为服务器运行。iperf默认监听5001端口，并丢弃端口上接收到的所有数据，相当于一个discard服务器。
 
 31. data
-���Բ������糬ʱ�ش���ֵ�ʱ��
+可以测试网络超时重传坚持的时间
 
 32. wget
-������
+下载器
 
 33. export
 
 34. lsof - list open files
-�鿴��������������Ķ˿ں�
+查看服务器程序监听的端口号
 
 35. service
-service��һ���ű�����(/usr/sbin/service)����Ϊ/etc/init.d/Ŀ¼�µ��ڶ����������(����httpd��vsftpd��sshd��mysqld�ȣ���������start����ֹͣ��stop����������restart���ȶ����ṩ��һ��ͳһ�Ĺ�����
+service是一个脚本程序(/usr/sbin/service)，它为/etc/init.d/目录下的众多服务器程序(比如httpd，vsftpd，sshd和mysqld等）的启动（start），停止（stop），重启（restart）等动作提供了一个统一的管理。
 
 $ service squid3 restart
 
 36. journalctl -xe
-�鿴������־
+查看网络日志
 
 37. ip addr
-�鿴������Ϣ
+查看网卡信息
 
 38. getconf
 get configuration values
@@ -292,6 +293,29 @@ get configuration values
 40. sysctl
 
 41. strace - trace system calls and signals
-strace����ʹ�����ܹ�����ز鿴ÿ��ϵͳ���÷�����ʱ�����Լ���ز�����ֵ�������gdb���Ը�����
+strace命令使我们能够清楚地查看每次系统调用发生地时机，以及相关参数的值，这比用gdb调试更方便
 
 42. ifstat
+
+43. ll
+ll是ls -l的一个别名
+
+44. rpm
+rpm -ql redis
+查询redis安装的所有文件
+
+45. systemctl list-unit-files | grep redis
+查看redis的自启动状态
+
+46. systemctl enable redis
+改为开机自启动，这个命令会复制一份redis.service文件到/usr/lib/systemd/system/目录下，这个目录中是所有开机自启动软件对应的service文件。
+
+47. chown
+
+48. chgrp
+
+49. yum install
+yum remove
+yum update
+
+50. 
